@@ -1,0 +1,18 @@
+# R package build artifacts
+*.Rcheck/
+*.tar.gz
+*.zip
+
+# RStudio
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+
+# Cache and temp
+inst/extdata/.cache/
+/doc/
+/Meta/
+
+# Claude
+CLAUDE.md
