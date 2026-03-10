@@ -3,3 +3,5 @@
 ^CLAUDE\.md$
 ^\.gitignore$
 ^LICENSE\.md$
+^README\.Rmd$
+^\.github$

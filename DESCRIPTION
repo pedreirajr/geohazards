@@ -1,6 +1,6 @@
 Package: geohazards
 Type: Package
-Title: an R package for extracting global climate risk, susceptibility, and vulnerability data
+Title: An R package for extracting global climate risk, susceptibility, and vulnerability data
 Version: 0.1.0
 Authors@R: c(
       person(given = "Jorge Ubirajara", family = "Pedreira Junior",
@@ -10,11 +10,17 @@ Authors@R: c(
              ),
       person(given = "Julio", family = "Pedrassoli",
              email = "jpedrassoli@usp.br",
-             role = "aut", "cre", "cph"),
+             role = c("aut", "cph"),
              comment = c(ORCID = "0000-0001-9762-102X")
              )
+        )
 Description: More about what it does (maybe more than one line).
     Continuation lines should be indented.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3

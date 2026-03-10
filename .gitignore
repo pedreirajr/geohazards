@@ -16,3 +16,4 @@ inst/extdata/.cache/
 
 # Claude
 CLAUDE.md
+.claude/
