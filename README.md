@@ -29,8 +29,7 @@ planned for submission to CRAN.
 
 ## Installation
 
-You can install the development version of geohazards from
-[GitHub](https://github.com/pedreirajr/geohazards) with:
+You can install the development version of geohazards from GitHub with:
 
 ``` r
 # install.packages("pak")
