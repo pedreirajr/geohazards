@@ -11,5 +11,10 @@ More about what it does (maybe more than one line). Continuation lines should be
 \author{
 \strong{Maintainer}: Jorge Ubirajara Pedreira Junior \email{jorge.ubirajara@ufba.br} (\href{https://orcid.org/0000-0002-8243-5395}{ORCID}) [copyright holder]
 
+Authors:
+\itemize{
+  \item Julio Pedrassoli \email{jpedrassoli@usp.br} (\href{https://orcid.org/0000-0001-9762-102X}{ORCID}) [copyright holder]
+}
+
 }
 \keyword{internal}
