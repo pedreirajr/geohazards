@@ -60,3 +60,10 @@ terra::plot(spo_hand)
 ```
 
 ![](man/figures/README-spo_hand.png)
+
+If you use {cnefetools} in your work, please cite it as:
+
+> Pedreira Junior, J.U. & Pedrassoli, J. (2026). geohazards: an R
+> package for extracting global data related to climate risk,
+> susceptibility, and vulnerability. GitHub repository:
+> <https://github.com/pedreirajr/geohazards>
