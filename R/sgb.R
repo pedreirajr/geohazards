@@ -34,33 +34,44 @@
 #'   over `municipality` and is never ambiguous.
 #'
 #' @return An `sf` object in SIRGAS 2000 (EPSG:4674), possibly with zero rows.
+#'   Field names are translated to English, as listed under *Field names*
+#'   below. Date fields, which the server encodes as epoch milliseconds, are
+#'   returned as `Date`.
 #'
-#'   Field names are translated to English. The mapping from the original SGB
-#'   field names is:
-#'   \describe{
-#'     \item{common}{`municipio`/`munic` -> `name_muni`, `uf` ->
-#'       `abbrev_state`, `cd_geocmu` -> `code_muni`}
-#'     \item{risk, risk_amazonas}{`grau_risco` -> `risk_level`, `tipolo_g1` ->
-#'       `process_type`, `tipolo_e1` -> `process_subtype`, `cobrade_01` ->
-#'       `cobrade`, `data_setor` -> `survey_date`, `num_pess` -> `n_people`,
-#'       `num_edif` -> `n_buildings`, `num_domi` -> `n_households`, `local` ->
-#'       `locality`}
-#'     \item{flood}{`classe` -> `flood_class`, `processo` -> `process`, `ano`
-#'       -> `year`}
-#'     \item{occurrence_*}{`evento` -> `event`, `evento_data` -> `event_date`,
-#'       `chovia` -> `was_raining`, `qtd_imoveis_atingidos` ->
-#'       `n_affected_buildings`, `observacoes` -> `notes`, `analisado` ->
-#'       `reviewed`}
-#'   }
-#'   Fields absent from this mapping are returned under their original names.
-#'   Date fields, which the server encodes as epoch milliseconds, are returned
-#'   as `Date`.
+#' @section Field names:
+#' The SGB publishes its attributes in Portuguese. This package exposes them in
+#' English, and the table below is the full mapping. Fields absent from it are
+#' returned under their original names: no column is ever dropped.
 #'
-#'   Attribute *values* remain as published by the SGB, in Portuguese: for
-#'   example `risk_level` takes `"Alto"` and `"Muito alto"`. `n_people`,
-#'   `n_buildings` and `n_households` are the SGB's own per-sector estimates.
-#'   The occurrence layers include an `email` field from the original report,
-#'   which is personal data and should not be redistributed.
+#' | SGB field | Field returned | Products |
+#' | --- | --- | --- |
+#' | `cd_geocmu` | `code_muni` | all |
+#' | `municipio`, `munic` | `name_muni` | all |
+#' | `uf` | `abbrev_state` | all |
+#' | `local` | `locality` | risk, risk_amazonas |
+#' | `grau_risco` | `risk_level` | risk, risk_amazonas |
+#' | `tipolo_g1` | `process_type` | risk, risk_amazonas |
+#' | `tipolo_e1` | `process_subtype` | risk, risk_amazonas |
+#' | `cobrade_01` | `cobrade` | risk, risk_amazonas |
+#' | `data_setor` | `survey_date` | risk, risk_amazonas |
+#' | `num_pess` | `n_people` | risk, risk_amazonas |
+#' | `num_edif` | `n_buildings` | risk, risk_amazonas |
+#' | `num_domi` | `n_households` | risk, risk_amazonas |
+#' | `classe` | `flood_class` | flood |
+#' | `processo` | `process` | flood |
+#' | `ano` | `year` | flood |
+#' | `evento` | `event` | occurrence_mobile, occurrence_pending |
+#' | `evento_data` | `event_date` | occurrence_mobile, occurrence_pending |
+#' | `chovia` | `was_raining` | occurrence_mobile, occurrence_pending |
+#' | `qtd_imoveis_atingidos` | `n_affected_buildings` | occurrence_mobile, occurrence_pending |
+#' | `observacoes` | `notes` | occurrence_mobile, occurrence_pending |
+#' | `analisado` | `reviewed` | occurrence_mobile, occurrence_pending |
+#'
+#' Attribute *values* are left exactly as the SGB publishes them, in
+#' Portuguese: `risk_level`, for instance, takes `"Alto"` and `"Muito alto"`.
+#' `n_people`, `n_buildings` and `n_households` are the SGB's own per-sector
+#' estimates. The occurrence layers also carry an `email` field taken from the
+#' original report, which is personal data and should not be redistributed.
 #'
 #' @seealso [sgb_products()], [sgb_inventory()], [read_sgb_risk()]
 #'
@@ -163,6 +174,7 @@ read_sgb <- function(product = "risk", municipality = NULL, state = NULL,
 #'   published by the SGB: `"Alto"`, `"Muito alto"`.
 #'
 #' @inherit read_sgb return
+#' @inheritSection read_sgb Field names
 #'
 #' @seealso [read_sgb()], [sgb_inventory()]
 #'

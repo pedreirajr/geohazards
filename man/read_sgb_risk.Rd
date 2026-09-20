@@ -26,38 +26,51 @@ published by the SGB: \code{"Alto"}, \code{"Muito alto"}.}
 }
 \value{
 An \code{sf} object in SIRGAS 2000 (EPSG:4674), possibly with zero rows.
-
-Field names are translated to English. The mapping from the original SGB
-field names is:
-\describe{
-\item{common}{\code{municipio}/\code{munic} -> \code{name_muni}, \code{uf} ->
-\code{abbrev_state}, \code{cd_geocmu} -> \code{code_muni}}
-\item{risk, risk_amazonas}{\code{grau_risco} -> \code{risk_level}, \code{tipolo_g1} ->
-\code{process_type}, \code{tipolo_e1} -> \code{process_subtype}, \code{cobrade_01} ->
-\code{cobrade}, \code{data_setor} -> \code{survey_date}, \code{num_pess} -> \code{n_people},
-\code{num_edif} -> \code{n_buildings}, \code{num_domi} -> \code{n_households}, \code{local} ->
-\code{locality}}
-\item{flood}{\code{classe} -> \code{flood_class}, \code{processo} -> \code{process}, \code{ano}
--> \code{year}}
-\item{occurrence_*}{\code{evento} -> \code{event}, \code{evento_data} -> \code{event_date},
-\code{chovia} -> \code{was_raining}, \code{qtd_imoveis_atingidos} ->
-\code{n_affected_buildings}, \code{observacoes} -> \code{notes}, \code{analisado} ->
-\code{reviewed}}
-}
-Fields absent from this mapping are returned under their original names.
-Date fields, which the server encodes as epoch milliseconds, are returned
-as \code{Date}.
-
-Attribute \emph{values} remain as published by the SGB, in Portuguese: for
-example \code{risk_level} takes \code{"Alto"} and \code{"Muito alto"}. \code{n_people},
-\code{n_buildings} and \code{n_households} are the SGB's own per-sector estimates.
-The occurrence layers include an \code{email} field from the original report,
-which is personal data and should not be redistributed.
+Field names are translated to English, as listed under \emph{Field names}
+below. Date fields, which the server encodes as epoch milliseconds, are
+returned as \code{Date}.
 }
 \description{
 Shortcut for \code{read_sgb("risk", ...)}, the most used product of the SGB, with
 an optional filter by risk level.
 }
+\section{Field names}{
+
+The SGB publishes its attributes in Portuguese. This package exposes them in
+English, and the table below is the full mapping. Fields absent from it are
+returned under their original names: no column is ever dropped.\tabular{lll}{
+   SGB field \tab Field returned \tab Products \cr
+   \code{cd_geocmu} \tab \code{code_muni} \tab all \cr
+   \code{municipio}, \code{munic} \tab \code{name_muni} \tab all \cr
+   \code{uf} \tab \code{abbrev_state} \tab all \cr
+   \code{local} \tab \code{locality} \tab risk, risk_amazonas \cr
+   \code{grau_risco} \tab \code{risk_level} \tab risk, risk_amazonas \cr
+   \code{tipolo_g1} \tab \code{process_type} \tab risk, risk_amazonas \cr
+   \code{tipolo_e1} \tab \code{process_subtype} \tab risk, risk_amazonas \cr
+   \code{cobrade_01} \tab \code{cobrade} \tab risk, risk_amazonas \cr
+   \code{data_setor} \tab \code{survey_date} \tab risk, risk_amazonas \cr
+   \code{num_pess} \tab \code{n_people} \tab risk, risk_amazonas \cr
+   \code{num_edif} \tab \code{n_buildings} \tab risk, risk_amazonas \cr
+   \code{num_domi} \tab \code{n_households} \tab risk, risk_amazonas \cr
+   \code{classe} \tab \code{flood_class} \tab flood \cr
+   \code{processo} \tab \code{process} \tab flood \cr
+   \code{ano} \tab \code{year} \tab flood \cr
+   \code{evento} \tab \code{event} \tab occurrence_mobile, occurrence_pending \cr
+   \code{evento_data} \tab \code{event_date} \tab occurrence_mobile, occurrence_pending \cr
+   \code{chovia} \tab \code{was_raining} \tab occurrence_mobile, occurrence_pending \cr
+   \code{qtd_imoveis_atingidos} \tab \code{n_affected_buildings} \tab occurrence_mobile, occurrence_pending \cr
+   \code{observacoes} \tab \code{notes} \tab occurrence_mobile, occurrence_pending \cr
+   \code{analisado} \tab \code{reviewed} \tab occurrence_mobile, occurrence_pending \cr
+}
+
+
+Attribute \emph{values} are left exactly as the SGB publishes them, in
+Portuguese: \code{risk_level}, for instance, takes \code{"Alto"} and \code{"Muito alto"}.
+\code{n_people}, \code{n_buildings} and \code{n_households} are the SGB's own per-sector
+estimates. The occurrence layers also carry an \code{email} field taken from the
+original report, which is personal data and should not be redistributed.
+}
+
 \examples{
 \dontrun{
   read_sgb_risk("Angra dos Reis", state = "RJ")
