@@ -8,3 +8,4 @@
 ^\.claude$
 ^data-raw$
 ^vignettes/articles$
+^README_cache$

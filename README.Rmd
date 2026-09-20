@@ -91,23 +91,45 @@ mapped for a municipality and then downloads its risk sectorisation.
 Before downloading anything, `sgb_inventory()` reports which products
 exist and how many features each one has.
 
-```{r sgb, eval = FALSE}
+```{r sgb-catalog, cache = TRUE}
 library(geohazards)
 
-# The catalogue of products, and what exists for one municipality
-sgb_products()
-sgb_inventory("Angra dos Reis", state = "RJ")
+# The catalogue of products
+knitr::kable(sgb_products())
 
-# Risk sectorisation as an sf object, in SIRGAS 2000 (EPSG:4674)
-angra <- read_sgb_risk("Angra dos Reis", state = "RJ")
-
-# People living in the most critical sectors
-critical <- read_sgb_risk("Angra dos Reis", state = "RJ",
-                          risk_level = "Muito alto")
-sum(critical$n_people, na.rm = TRUE)
+# What exists for a specific municipality
+knitr::kable(sgb_inventory("Angra dos Reis", state = "RJ"))
 ```
 
-The SGB mapping is not universal: a municipality with no features comes
+`read_sgb_risk()` returns the risk sectorisation as an `sf` object in
+SIRGAS 2000 (EPSG:4674), with every risk level mapped by the SGB.
+
+```{r sgb-risk, cache = TRUE}
+angra <- read_sgb_risk("Angra dos Reis", state = "RJ")
+
+# Sectors and people at risk by risk level
+table(angra$risk_level)
+tapply(angra$n_people, angra$risk_level, sum, na.rm = TRUE)
+```
+
+```{r sgb-map, cache = TRUE, dependson = "sgb-risk", fig.width = 8, fig.height = 5}
+library(ggplot2)
+
+# Municipality boundary for context
+angra_muni <- geobr::read_municipality(code_muni = angra$code_muni[1],
+                                       year = 2022, showProgress = FALSE)
+
+ggplot() +
+  geom_sf(data = angra_muni, fill = "grey95", colour = "grey60") +
+  geom_sf(data = angra, aes(fill = risk_level), colour = NA) +
+  scale_fill_manual(values = c("Alto" = "#f28e2b", "Muito alto" = "#c0392b"),
+                    name = "Risk level") +
+  labs(title = "Geological risk sectors in Angra dos Reis (RJ)",
+       caption = "Source: Geological Survey of Brazil (SGB/CPRM)") +
+  theme_minimal()
+```
+
+Important: the SGB mapping is not universal. A municipality with no features comes
 back as an empty `sf` object with a warning. Absence of mapping is not
 absence of risk.
 

@@ -79,22 +79,72 @@ exist and how many features each one has.
 ``` r
 library(geohazards)
 
-# The catalogue of products, and what exists for one municipality
-sgb_products()
-sgb_inventory("Angra dos Reis", state = "RJ")
-
-# Risk sectorisation as an sf object, in SIRGAS 2000 (EPSG:4674)
-angra <- read_sgb_risk("Angra dos Reis", state = "RJ")
-
-# People living in the most critical sectors
-critical <- read_sgb_risk("Angra dos Reis", state = "RJ",
-                          risk_level = "Muito alto")
-sum(critical$n_people, na.rm = TRUE)
+# The catalogue of products
+knitr::kable(sgb_products())
 ```
 
-The SGB mapping is not universal: a municipality with no features comes
-back as an empty `sf` object with a warning. Absence of mapping is not
-absence of risk.
+| product | service | theme | type | key | scope | queryable |
+|:---|:---|:---|:---|:---|:---|:---|
+| risk | risco | risk | cartography | cd_geocmu | municipality | TRUE |
+| risk_amazonas | risco_am | risk | cartography | cd_geocmu | municipality | TRUE |
+| flood | inundacao | flood | cartography | municipio | municipality | TRUE |
+| occurrence_pending | not_homolog_desastre_google | occurrence | occurrence | municipio | national | TRUE |
+| occurrence_mobile | risco_mobile_google | occurrence | occurrence | municipio | national | TRUE |
+| hazard | perigo | susceptibility | cartography | cd_geocmu | municipality | FALSE |
+| debris_flow | corrida_de_massa | debris flow | cartography | municipio | municipality | FALSE |
+| relief_pattern | padrao_relevo | relief pattern | cartography | municipio | municipality | FALSE |
+| occurrence_approved | homolog_desastre_google | occurrence | occurrence | municipio | national | FALSE |
+
+``` r
+
+# What exists for a specific municipality
+knitr::kable(sgb_inventory("Angra dos Reis", state = "RJ"))
+```
+
+| name_muni      | abbrev_state | theme | product | type        | n_features |
+|:---------------|:-------------|:------|:--------|:------------|-----------:|
+| Angra dos Reis | RJ           | risk  | risk    | cartography |         75 |
+| Angra dos Reis | RJ           | flood | flood   | cartography |        198 |
+
+`read_sgb_risk()` returns the risk sectorisation as an `sf` object in
+SIRGAS 2000 (EPSG:4674), with every risk level mapped by the SGB.
+
+``` r
+angra <- read_sgb_risk("Angra dos Reis", state = "RJ")
+
+# Sectors and people at risk by risk level
+table(angra$risk_level)
+#> 
+#>       Alto Muito alto 
+#>         44         31
+tapply(angra$n_people, angra$risk_level, sum, na.rm = TRUE)
+#>       Alto Muito alto 
+#>      31944      12904
+```
+
+``` r
+library(ggplot2)
+
+# Municipality boundary for context
+angra_muni <- geobr::read_municipality(code_muni = angra$code_muni[1],
+                                       year = 2022, showProgress = FALSE)
+#> ℹ Using year/date 2022
+
+ggplot() +
+  geom_sf(data = angra_muni, fill = "grey95", colour = "grey60") +
+  geom_sf(data = angra, aes(fill = risk_level), colour = NA) +
+  scale_fill_manual(values = c("Alto" = "#f28e2b", "Muito alto" = "#c0392b"),
+                    name = "Risk level") +
+  labs(title = "Geological risk sectors in Angra dos Reis (RJ)",
+       caption = "Source: Geological Survey of Brazil (SGB/CPRM)") +
+  theme_minimal()
+```
+
+<img src="man/figures/README-sgb-map-1.png" alt="" width="100%" />
+
+Important: the SGB mapping is not universal. A municipality with no
+features comes back as an empty `sf` object with a warning. Absence of
+mapping is not absence of risk.
 
 If you use {geohazards} in your work, please cite it as:
 
