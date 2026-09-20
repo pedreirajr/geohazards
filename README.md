@@ -19,13 +19,21 @@ interface for accessing remote geospatial datasets (such as flood
 susceptibility indices, landslide risk maps, and geological hazard
 layers) directly from R, without manual downloading.
 
-The package currently provides `get_hand()`, which retrieves the [GLO-30
-HAND](https://registry.opendata.aws/glo-30-hand/) ([Height Above the
-Nearest
-Drainage](https://www.sciencedirect.com/science/article/abs/pii/S0022169411002599))
-raster at 30 m resolution for any polygon supplied by the user. It is
-actively being expanded with new data sources and functions, and is
-planned for submission to CRAN.
+The package currently covers two data sources:
+
+- **GLO-30 HAND**, through `read_hand()`, which retrieves the [GLO-30
+  HAND](https://registry.opendata.aws/glo-30-hand/) ([Height Above the
+  Nearest
+  Drainage](https://www.sciencedirect.com/science/article/abs/pii/S0022169411002599))
+  raster at 30 m resolution for any polygon supplied by the user.
+- **SGB/CPRM**, through `read_sgb()` and friends, which retrieve the
+  geological risk cartography published by the [Geological Survey of
+  Brazil](https://geoportal.sgb.gov.br/) — risk sectorisation, flood
+  mapping and disaster occurrences — plus the technical reports
+  deposited in its repository (RIGeo).
+
+It is actively being expanded with new data sources and functions, and
+is planned for submission to CRAN.
 
 ## Installation
 
@@ -53,13 +61,40 @@ spo_geo  <- read_municipality(code_muni = spo_ibge, year = 2022)
 
 # Fetch the HAND raster clipped to the municipality boundary.
 # Data is read remotely via Cloud Optimized GeoTIFF (no full tile downloads).
-spo_hand <- get_hand(place = spo_geo)
+spo_hand <- read_hand(place = spo_geo)
 
 # Visualise the result
 terra::plot(spo_hand)
 ```
 
 ![](man/figures/README-spo_hand.png)
+
+### Geological risk cartography (SGB/CPRM)
+
+The example below inspects what the Geological Survey of Brazil has
+mapped for a municipality and then downloads its risk sectorisation.
+Before downloading anything, `sgb_inventory()` reports which products
+exist and how many features each one has.
+
+``` r
+library(geohazards)
+
+# The catalogue of products, and what exists for one municipality
+sgb_products()
+sgb_inventory("Angra dos Reis", state = "RJ")
+
+# Risk sectorisation as an sf object, in SIRGAS 2000 (EPSG:4674)
+angra <- read_sgb_risk("Angra dos Reis", state = "RJ")
+
+# People living in the most critical sectors
+critical <- read_sgb_risk("Angra dos Reis", state = "RJ",
+                          risk_level = "Muito alto")
+sum(critical$n_people, na.rm = TRUE)
+```
+
+The SGB mapping is not universal: a municipality with no features comes
+back as an empty `sf` object with a warning. Absence of mapping is not
+absence of risk.
 
 If you use {geohazards} in your work, please cite it as:
 

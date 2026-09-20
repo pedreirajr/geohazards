@@ -6,13 +6,14 @@
 \alias{geohazards-package}
 \title{geohazards: An R package for extracting global climate risk, susceptibility, and vulnerability data}
 \description{
-More about what it does (maybe more than one line). Continuation lines should be indented.
+Downloads and reads global datasets related to climate risk, susceptibility and vulnerability directly into R, without manual downloading. Includes the GLO-30 HAND (Height Above the Nearest Drainage) raster for flood susceptibility, and the geological risk cartography published by the Geological Survey of Brazil (SGB/CPRM) through its GeoSGB and RIGeo services.
 }
 \author{
 \strong{Maintainer}: Jorge Ubirajara Pedreira Junior \email{jorge.ubirajara@ufba.br} (\href{https://orcid.org/0000-0002-8243-5395}{ORCID}) [copyright holder]
 
 Authors:
 \itemize{
+  \item Jorge Ubirajara Pedreira Junior \email{jorge.ubirajara@ufba.br} (\href{https://orcid.org/0000-0002-8243-5395}{ORCID}) [copyright holder]
   \item Julio Pedrassoli \email{jpedrassoli@usp.br} (\href{https://orcid.org/0000-0001-9762-102X}{ORCID}) [copyright holder]
 }
 
