@@ -65,7 +65,7 @@
 #'   the boundary of `place`. The CRS is WGS84 unless `crs_output` is set.
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #'   muni <- geobr::read_municipality(code_muni = 2929057, year = 2022,
 #'                                    simplified = FALSE, showProgress = FALSE)
 #'

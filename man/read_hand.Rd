@@ -31,7 +31,7 @@ so the returned raster covers the full combined extent
 masked to the union boundary.
 }
 \examples{
-\donttest{
+\dontrun{
   muni <- geobr::read_municipality(code_muni = 2929057, year = 2022,
                                    simplified = FALSE, showProgress = FALSE)
 

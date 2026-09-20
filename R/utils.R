@@ -19,17 +19,20 @@
 # Normalises a place name for matching: trimmed, upper case, accents stripped.
 # chartr() is used instead of iconv(to = "ASCII//TRANSLIT") because the
 # transliteration tables are not portable across platforms (notably Windows).
+# The accent table is built from code points rather than written out, so that
+# the source file stays pure ASCII, as portable packages must.
 #
 # @param x Character vector.
 # @return Character vector of the same length, upper case and unaccented.
 .norm_text <- function(x) {
   x <- toupper(trimws(as.character(x)))
-  chartr(
-    paste0(
-      "ÁÀÂÃÄÉÊÈËÍÎ",
-      "ÌÏÓÔÒÕÖÚÛÙÜÇ"
-    ),
-    "AAAAAEEEEIIIIOOOOOUUUUC",
-    x
-  )
+  accented <- intToUtf8(c(
+    193, 192, 194, 195, 196,   # A
+    201, 202, 200, 203,        # E
+    205, 206, 204, 207,        # I
+    211, 212, 210, 213, 214,   # O
+    218, 219, 217, 220,        # U
+    199                        # C
+  ))
+  chartr(accented, "AAAAAEEEEIIIIOOOOOUUUUC", x)
 }
