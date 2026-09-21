@@ -32,7 +32,7 @@ masked to the union boundary.
 }
 \examples{
 \dontrun{
-  muni <- geobr::read_municipality(code_muni = 2929057, year = 2022,
+  muni <- geobr::read_municipality(code_muni = 2919207, year = 2022,
                                    simplified = FALSE, showProgress = FALSE)
 
   # Returns in WGS84 (EPSG:4326) regardless of the CRS of `muni`
