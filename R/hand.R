@@ -41,7 +41,7 @@
   terra::mask(terra::crop(vrt, v), v)
 }
 
-#' Get GLO-30 HAND raster for a geographic area
+#' Read the GLO-30 HAND raster for a geographic area
 #'
 #' @description
 #' Returns the GLO-30 HAND (Height Above the Nearest Drainage) raster at
@@ -65,19 +65,19 @@
 #'   the boundary of `place`. The CRS is WGS84 unless `crs_output` is set.
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #'   muni <- geobr::read_municipality(code_muni = 2929057, year = 2022,
 #'                                    simplified = FALSE, showProgress = FALSE)
 #'
 #'   # Returns in WGS84 (EPSG:4326) regardless of the CRS of `muni`
-#'   r <- get_hand(muni)
+#'   r <- read_hand(muni)
 #'
 #'   # Request output in UTM zone 24S (EPSG:31984)
-#'   r_utm <- get_hand(muni, crs_output = 31984)
+#'   r_utm <- read_hand(muni, crs_output = 31984)
 #' }
 #'
 #' @export
-get_hand <- function(place, crs_output = NULL) {
+read_hand <- function(place, crs_output = NULL) {
   # --- input validation ---
   if (!inherits(place, "sf")) {
     rlang::abort("`place` must be an `sf` object.")

@@ -1,57 +1,57 @@
 # --- Input validation (no network, no mock needed) ---------------------------
 
-test_that("get_hand aborts if place is not an sf object", {
-  expect_error(get_hand("not_sf"), "`place` must be an `sf` object")
-  expect_error(get_hand(list()), "`place` must be an `sf` object")
+test_that("read_hand aborts if place is not an sf object", {
+  expect_error(read_hand("not_sf"), "`place` must be an `sf` object")
+  expect_error(read_hand(list()), "`place` must be an `sf` object")
 })
 
-test_that("get_hand aborts if place has no CRS", {
+test_that("read_hand aborts if place has no CRS", {
   p <- sf::st_as_sf(sf::st_sfc(
     sf::st_polygon(list(matrix(c(0, 0, 1, 0, 1, 1, 0, 1, 0, 0), ncol = 2, byrow = TRUE)))
   ))
-  expect_error(get_hand(p), "must have a defined coordinate reference system")
+  expect_error(read_hand(p), "must have a defined coordinate reference system")
 })
 
-test_that("get_hand aborts if place geometry is not polygon", {
+test_that("read_hand aborts if place geometry is not polygon", {
   p <- sf::st_as_sf(sf::st_sfc(sf::st_point(c(-38.5, -12.0)), crs = 4326))
-  expect_error(get_hand(p), "POLYGON or MULTIPOLYGON")
+  expect_error(read_hand(p), "POLYGON or MULTIPOLYGON")
 })
 
-test_that("get_hand aborts if crs_output is invalid", {
+test_that("read_hand aborts if crs_output is invalid", {
   p <- .hand_fixture_place()
-  expect_error(get_hand(p, crs_output = "not_a_crs"), "`crs_output` is not a valid CRS")
+  expect_error(read_hand(p, crs_output = "not_a_crs"), "`crs_output` is not a valid CRS")
 })
 
 # --- Offline tests (network call mocked via .hand_build_vrt) -----------------
 
-test_that("get_hand returns a SpatRaster (offline)", {
+test_that("read_hand returns a SpatRaster (offline)", {
   result <- with_mocked_bindings(
-    get_hand(.hand_fixture_place()),
+    read_hand(.hand_fixture_place()),
     .hand_build_vrt = mock_hand_build_vrt,
     .package = "geohazards"
   )
   expect_s4_class(result, "SpatRaster")
 })
 
-test_that("get_hand output CRS is WGS84 by default (offline)", {
+test_that("read_hand output CRS is WGS84 by default (offline)", {
   result <- with_mocked_bindings(
-    get_hand(.hand_fixture_place()),
+    read_hand(.hand_fixture_place()),
     .hand_build_vrt = mock_hand_build_vrt,
     .package = "geohazards"
   )
   expect_true(terra::same.crs(terra::crs(result), "EPSG:4326"))
 })
 
-test_that("get_hand reprojects when crs_output is set (offline)", {
+test_that("read_hand reprojects when crs_output is set (offline)", {
   result <- with_mocked_bindings(
-    get_hand(.hand_fixture_place(), crs_output = 31984),
+    read_hand(.hand_fixture_place(), crs_output = 31984),
     .hand_build_vrt = mock_hand_build_vrt,
     .package = "geohazards"
   )
   expect_true(terra::same.crs(terra::crs(result), "EPSG:31984"))
 })
 
-test_that("get_hand accepts multiple polygons and unions them (offline)", {
+test_that("read_hand accepts multiple polygons and unions them (offline)", {
   p1 <- sf::st_polygon(list(matrix(
     c(-38.58, -11.98, -38.55, -11.98, -38.55, -11.95, -38.58, -11.95, -38.58, -11.98),
     ncol = 2, byrow = TRUE
@@ -63,18 +63,18 @@ test_that("get_hand accepts multiple polygons and unions them (offline)", {
   place_multi <- sf::st_as_sf(sf::st_sfc(p1, p2, crs = 4326))
 
   result <- with_mocked_bindings(
-    get_hand(place_multi),
+    read_hand(place_multi),
     .hand_build_vrt = mock_hand_build_vrt,
     .package = "geohazards"
   )
   expect_s4_class(result, "SpatRaster")
 })
 
-test_that("get_hand accepts place in a projected CRS (offline)", {
+test_that("read_hand accepts place in a projected CRS (offline)", {
   place_utm <- sf::st_transform(.hand_fixture_place(), 31984)
 
   result <- with_mocked_bindings(
-    get_hand(place_utm),
+    read_hand(place_utm),
     .hand_build_vrt = mock_hand_build_vrt,
     .package = "geohazards"
   )
@@ -104,15 +104,14 @@ test_that(".hand_tile_urls handles northern hemisphere correctly", {
 
 # --- Online tests (require network access) -----------------------------------
 
-test_that("get_hand returns a valid SpatRaster for a real municipality", {
-  skip_on_cran()
-  skip_if_offline()
+test_that("read_hand returns a valid SpatRaster for a real municipality", {
+  skip_if_no_network_tests()
 
   muni <- geobr::read_municipality(
     code_muni = 2929057, year = 2022,
     simplified = FALSE, showProgress = FALSE
   )
-  result <- get_hand(muni)
+  result <- read_hand(muni)
 
   expect_s4_class(result, "SpatRaster")
   expect_true(terra::same.crs(terra::crs(result), "EPSG:4326"))

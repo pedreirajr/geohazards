@@ -1,7 +1,7 @@
 Package: geohazards
 Type: Package
 Title: An R package for extracting global climate risk, susceptibility, and vulnerability data
-Version: 0.1.0
+Version: 0.2.0
 Authors@R: c(
       person(given = "Jorge Ubirajara", family = "Pedreira Junior",
              email = "jorge.ubirajara@ufba.br",
@@ -14,19 +14,34 @@ Authors@R: c(
              comment = c(ORCID = "0000-0001-9762-102X")
              )
         )
-Description: More about what it does (maybe more than one line).
-    Continuation lines should be indented.
+Description: Downloads and reads global datasets related to climate risk,
+    susceptibility and vulnerability directly into R, without manual
+    downloading. Includes the GLO-30 HAND (Height Above the Nearest Drainage)
+    raster for flood susceptibility, and the geological risk cartography
+    published by the Geological Survey of Brazil (SGB/CPRM) through its GeoSGB
+    and RIGeo services.
 License: MIT + file LICENSE
+Depends:
+    R (>= 4.1.0)
 Imports:
     cli,
+    dplyr,
+    httr2,
     rlang,
     sf,
-    terra
+    terra,
+    utils
 Encoding: UTF-8
 LazyData: true
 Suggests:
+    curl,
     geobr,
-    testthat (>= 3.1.2)
+    knitr,
+    leafpop,
+    mapview,
+    rmarkdown,
+    testthat (>= 3.1.2),
+    zip
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
+Config/roxygen2/version: 8.0.0

@@ -17,3 +17,6 @@ inst/extdata/.cache/
 # Claude
 CLAUDE.md
 .claude/
+
+# knitr cache for README.Rmd
+README_cache/
