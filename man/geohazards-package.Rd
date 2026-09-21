@@ -6,6 +6,8 @@
 \alias{geohazards-package}
 \title{geohazards: An R package for extracting global climate risk, susceptibility, and vulnerability data}
 \description{
+\if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
+
 Downloads and reads global datasets related to climate risk, susceptibility and vulnerability directly into R, without manual downloading. Includes the GLO-30 HAND (Height Above the Nearest Drainage) raster for flood susceptibility, and the geological risk cartography published by the Geological Survey of Brazil (SGB/CPRM) through its GeoSGB and RIGeo services.
 }
 \author{

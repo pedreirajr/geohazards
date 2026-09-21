@@ -106,14 +106,15 @@ knitr::kable(sgb_inventory("Angra dos Reis", state = "RJ"))
 | Angra dos Reis | RJ           | risk  | risk    | cartography |         75 |
 | Angra dos Reis | RJ           | flood | flood   | cartography |        198 |
 
-`read_sgb_risk()` returns the risk sectorisation as an `sf` object in
-SIRGAS 2000 (EPSG:4674), with every risk level mapped by the SGB.
+`read_sgb()` returns the requested product as an `sf` object in SIRGAS
+2000 (EPSG:4674). The default product is the risk sectorisation, with
+every risk level mapped by the SGB.
 
 ``` r
 library(dplyr)
 library(sf)
 
-angra <- read_sgb_risk("Angra dos Reis", state = "RJ")
+angra <- read_sgb("risk", municipality = "Angra dos Reis", state = "RJ")
 
 # Sectors and people at risk by risk level
 table(angra$risk_level)

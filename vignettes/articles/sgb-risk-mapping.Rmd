@@ -49,7 +49,7 @@ sgb_municipalities(search = "angra")
 ## Reading the risk sectorisation
 
 ```{r read}
-angra <- read_sgb_risk("Angra dos Reis", state = "RJ")
+angra <- read_sgb("risk", municipality = "Angra dos Reis", state = "RJ")
 
 nrow(angra)
 names(angra)

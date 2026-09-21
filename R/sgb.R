@@ -73,18 +73,22 @@
 #' estimates. The occurrence layers also carry an `email` field taken from the
 #' original report, which is personal data and should not be redistributed.
 #'
-#' @seealso [sgb_products()], [sgb_inventory()], [read_sgb_risk()]
+#' @seealso [sgb_products()], [sgb_inventory()]
 #'
 #' @examples
 #' \dontrun{
+#'   # Risk sectorisation, the default product
+#'   read_sgb(municipality = "Angra dos Reis", state = "RJ")
+#'
 #'   # Flood mapping for a municipality
-#'   read_sgb("flood", municipality = "Nova Viçosa", state = "BA")
+#'   read_sgb("flood", municipality = "Nova Vicosa", state = "BA")
 #'
 #'   # By IBGE code, which never needs disambiguation
 #'   read_sgb("risk", code_muni = 3300100)
 #'
-#'   # Every mapped risk sector in a state
-#'   read_sgb("risk", state = "RJ")
+#'   # Every mapped risk sector in a state, keeping only the critical ones
+#'   sectors <- read_sgb("risk", state = "RJ")
+#'   sectors[sectors$risk_level == "Muito alto", ]
 #' }
 #'
 #' @export
@@ -161,41 +165,4 @@ read_sgb <- function(product = "risk", municipality = NULL, state = NULL,
     sparse = FALSE
   )
   out[apply(inside, 1, any), ]
-}
-
-#' Read the SGB risk sectorisation of a municipality
-#'
-#' @description
-#' Shortcut for `read_sgb("risk", ...)`, the most used product of the SGB, with
-#' an optional filter by risk level.
-#'
-#' @inheritParams read_sgb
-#' @param risk_level Optional character vector of risk levels to keep, as
-#'   published by the SGB: `"Alto"`, `"Muito alto"`.
-#'
-#' @inherit read_sgb return
-#' @inheritSection read_sgb Field names
-#'
-#' @seealso [read_sgb()], [sgb_inventory()]
-#'
-#' @examples
-#' \dontrun{
-#'   read_sgb_risk("Angra dos Reis", state = "RJ")
-#'
-#'   # Only the most critical sectors
-#'   read_sgb_risk("Angra dos Reis", state = "RJ", risk_level = "Muito alto")
-#' }
-#'
-#' @export
-read_sgb_risk <- function(municipality = NULL, state = NULL, code_muni = NULL,
-                          risk_level = NULL) {
-  out <- read_sgb(
-    "risk",
-    municipality = municipality, state = state, code_muni = code_muni
-  )
-
-  if (nrow(out) && !is.null(risk_level)) {
-    out <- out[out$risk_level %in% risk_level, ]
-  }
-  out
 }

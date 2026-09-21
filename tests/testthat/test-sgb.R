@@ -159,34 +159,23 @@ test_that("read_sgb aborts before reaching the network on a bad product", {
   expect_error(read_sgb("relief_pattern", code_muni = 3300100), "cannot be queried")
 })
 
-# --- read_sgb_risk ------------------------------------------------------------
-
-test_that("read_sgb_risk filters by risk level", {
+test_that("read_sgb defaults to the risk sectorisation", {
   result <- with_mocked_bindings(
-    read_sgb_risk(code_muni = 3300100, risk_level = "Muito alto"),
+    read_sgb(code_muni = 3300100),
     .sgb_fetch = mock_sgb_fetch,
     .package = "geohazards"
   )
 
-  expect_equal(nrow(result), 1L)
-  expect_equal(result$risk_level, "Muito alto")
-})
-
-test_that("read_sgb_risk returns every sector when no level is given", {
-  result <- with_mocked_bindings(
-    read_sgb_risk(code_muni = 3300100),
-    .sgb_fetch = mock_sgb_fetch,
-    .package = "geohazards"
-  )
   expect_equal(nrow(result), 2L)
+  expect_true("risk_level" %in% names(result))
 })
 
 # --- Online test (requires network access) ------------------------------------
 
-test_that("read_sgb_risk downloads real risk sectors from the SGB", {
+test_that("read_sgb downloads real risk sectors from the SGB", {
   skip_if_no_network_tests()
 
-  result <- read_sgb_risk("Angra dos Reis", state = "RJ")
+  result <- read_sgb("risk", municipality = "Angra dos Reis", state = "RJ")
 
   expect_s3_class(result, "sf")
   expect_gt(nrow(result), 0L)

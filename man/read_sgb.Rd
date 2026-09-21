@@ -85,17 +85,21 @@ original report, which is personal data and should not be redistributed.
 
 \examples{
 \dontrun{
+  # Risk sectorisation, the default product
+  read_sgb(municipality = "Angra dos Reis", state = "RJ")
+
   # Flood mapping for a municipality
-  read_sgb("flood", municipality = "Nova Viçosa", state = "BA")
+  read_sgb("flood", municipality = "Nova Vicosa", state = "BA")
 
   # By IBGE code, which never needs disambiguation
   read_sgb("risk", code_muni = 3300100)
 
-  # Every mapped risk sector in a state
-  read_sgb("risk", state = "RJ")
+  # Every mapped risk sector in a state, keeping only the critical ones
+  sectors <- read_sgb("risk", state = "RJ")
+  sectors[sectors$risk_level == "Muito alto", ]
 }
 
 }
 \seealso{
-\code{\link[=sgb_products]{sgb_products()}}, \code{\link[=sgb_inventory]{sgb_inventory()}}, \code{\link[=read_sgb_risk]{read_sgb_risk()}}
+\code{\link[=sgb_products]{sgb_products()}}, \code{\link[=sgb_inventory]{sgb_inventory()}}
 }
