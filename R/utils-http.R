@@ -102,6 +102,7 @@
     }
 
     part <- .sgb_read_geojson(resp)
+    if (!is.null(part)) part <- .sgb_drop_personal(part)
     k <- if (is.null(part)) 0L else nrow(part)
     if (k) parts[[length(parts) + 1L]] <- part
 

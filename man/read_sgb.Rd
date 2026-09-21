@@ -50,7 +50,8 @@ boundary, which requires the \pkg{geobr} package.
 
 The SGB publishes its attributes in Portuguese. This package exposes them in
 English, and the table below is the full mapping. Fields absent from it are
-returned under their original names: no column is ever dropped.\tabular{lll}{
+returned under their original names. The only columns ever dropped are the
+personal ones described below.\tabular{lll}{
    SGB field \tab Field returned \tab Products \cr
    \code{cd_geocmu} \tab \code{code_muni} \tab all \cr
    \code{municipio}, \code{munic} \tab \code{name_muni} \tab all \cr
@@ -79,8 +80,16 @@ returned under their original names: no column is ever dropped.\tabular{lll}{
 Attribute \emph{values} are left exactly as the SGB publishes them, in
 Portuguese: \code{risk_level}, for instance, takes \code{"Alto"} and \code{"Muito alto"}.
 \code{n_people}, \code{n_buildings} and \code{n_households} are the SGB's own per-sector
-estimates. The occurrence layers also carry an \code{email} field taken from the
-original report, which is personal data and should not be redistributed.
+estimates.
+}
+
+\section{Personal data}{
+
+The occurrence layers, fed by public reports, carry the e-mail of whoever
+reported the event (\code{email}) and the account name of whoever created or last
+edited the record (\code{created_user}, \code{last_edited_user}). These fields
+identify people, so \code{read_sgb()} removes them as each page is downloaded
+and never returns them. The free-text \code{notes} field is kept as published.
 }
 
 \examples{

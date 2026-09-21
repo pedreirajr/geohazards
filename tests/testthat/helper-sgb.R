@@ -35,6 +35,33 @@
   )
 }
 
+# Citizen-reported occurrences: two points carrying the personal fields the
+# package must never return. The values are made up.
+.sgb_fixture_occurrence <- function() {
+  sf::st_sf(
+    email = c("someone@example.com", "another@example.com"),
+    evento = c("Deslizamento", "Alagamento"),
+    uf = c("RJ", "RJ"),
+    municipio = c("Angra dos Reis", "Angra dos Reis"),
+    observacoes = c("Muro cedeu", "Rua alagada"),
+    created_user = c(NA_character_, NA_character_),
+    last_edited_user = c("analyst.one", "analyst.two"),
+    geometry = sf::st_sfc(
+      sf::st_point(c(-44.31, -23.00)), sf::st_point(c(-44.30, -23.00)),
+      crs = 4674
+    )
+  )
+}
+
+# Serialises an sf fixture to GeoJSON text, as the server would send it.
+.sgb_fixture_geojson <- function(x) {
+  tmp <- tempfile(fileext = ".geojson")
+  on.exit(unlink(tmp), add = TRUE)
+  sf::st_write(x, tmp, quiet = TRUE)
+  paste(readLines(tmp, warn = FALSE), collapse = "
+")
+}
+
 # Drop-in replacement for .sgb_fetch() returning the fixture.
 mock_sgb_fetch <- function(service, where = "1=1", n = Inf, timeout = 40,
                            bbox = NULL) {
