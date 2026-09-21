@@ -115,6 +115,11 @@ sf::st_crs(angra)$epsg  # 4674, SIRGAS 2000
 #> [1] 4674
 ```
 
+Important: Field names come back in English, while the values remain as
+the SGB publishes them. The mapping from the original SGB field names is
+documented in
+[`?read_sgb`](https://pedreirajr.github.io/geohazards/reference/read_sgb.md).
+
 ## Exposure in risk sectors
 
 `n_people`, `n_buildings` and `n_households` are the SGB’s own
@@ -223,9 +228,9 @@ mapview(angra, zcol = "risk_process", map.types = "Esri.WorldImagery")
 
 ## Exporting
 
-Again, no wrapper needed:
+We can simply use
 [`sf::st_write()`](https://r-spatial.github.io/sf/reference/st_write.html)
-handles every format.
+that handles every format.
 
 ``` r
 
@@ -238,47 +243,6 @@ sf::st_write(sf::st_transform(angra, 4326), "angra_risk.kml", delete_dsn = TRUE)
 
 Avoid shapefile if you can: it truncates field names to ten characters,
 which turns `n_affected_buildings` into something unreadable.
-
-## Combining with flood susceptibility
-
-The risk sectors say where people are exposed;
-[`read_hand()`](https://pedreirajr.github.io/geohazards/reference/read_hand.md)
-says how high the terrain sits above the nearest drainage, which is a
-proxy for flood susceptibility. The two combine directly:
-
-``` r
-
-boundary <- geobr::read_municipality(code_muni = 3300100, year = 2022,
-                                     showProgress = FALSE)
-hand <- read_hand(boundary)
-
-# Mean HAND under each risk sector
-angra <- angra |>
-  mutate(hand_mean = terra::extract(
-    hand, terra::vect(sf::st_transform(angra, 4326)), fun = mean, na.rm = TRUE
-  )[, 2])
-```
-
-Sectors with a low mean HAND and a high risk level are the ones where
-flooding and mapped geological risk coincide:
-
-``` r
-
-angra |>
-  sf::st_drop_geometry() |>
-  summarise(sectors = n(), mean_hand = mean(hand_mean, na.rm = TRUE),
-            .by = c(risk_level, process_type)) |>
-  arrange(mean_hand)
-#>   risk_level     process_type sectors mean_hand
-#> 1       Alto Corrida de massa       4  47.14824
-#> 2 Muito alto            Queda       2  47.92051
-#> 3       Alto          Rastejo       1  48.35580
-#> 4       Alto            Queda       1  50.42272
-#> 5       Alto     Deslizamento      38  53.80006
-#> 6 Muito alto     Deslizamento      26  59.39246
-#> 7 Muito alto Corrida de massa       1  69.19034
-#> 8 Muito alto        Enxurrada       2  80.08294
-```
 
 ## Technical reports
 
