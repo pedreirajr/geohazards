@@ -33,8 +33,9 @@ read_hand(place, crs_output = NULL)
 
 ## Value
 
-A `SpatRaster` (terra) with HAND values in metres, clipped to the
-boundary of `place`. The CRS is WGS84 unless `crs_output` is set.
+A single-layer `SpatRaster` (terra) named `hand`, with HAND values in
+metres, clipped to the boundary of `place`. The CRS is WGS84 unless
+`crs_output` is set.
 
 ## Examples
 

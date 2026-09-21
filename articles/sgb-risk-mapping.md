@@ -1,23 +1,24 @@
 # Mapping geological risk with the SGB
 
 The Geological Survey of Brazil (SGB/CPRM) maps, municipality by
-municipality, the sectors where people live under geological risk —
-landslides, debris flows, flash floods. `geohazards` reads that
+municipality, the sectors where people live under geological risk
+(landslides, debris flows, flash floods). `geohazards` reads that
 cartography directly into R.
 
-This article goes through a full workflow: finding out what exists,
+This article goes through a full workflow, finding out what exists,
 downloading it, summarising the exposure, mapping it interactively and
 exporting it.
 
 ``` r
 
 library(geohazards)
+library(dplyr)
 ```
 
 ## What exists before you download it
 
-The SGB mapping is not universal, and the server is slow enough that it
-pays to ask before downloading.
+The SGB mapping is not universal, and the server can be slow enough that
+it pays to ask before downloading.
 [`sgb_inventory()`](https://pedreirajr.github.io/geohazards/reference/sgb_inventory.md)
 counts features without transferring any geometry.
 
@@ -25,12 +26,50 @@ counts features without transferring any geometry.
 
 # The catalogue of products and the identifier each one is requested by
 sgb_products()
+#>               product                     service          theme        type
+#> 1                risk                       risco           risk cartography
+#> 2       risk_amazonas                    risco_am           risk cartography
+#> 3               flood                   inundacao          flood cartography
+#> 4  occurrence_pending not_homolog_desastre_google     occurrence  occurrence
+#> 5   occurrence_mobile         risco_mobile_google     occurrence  occurrence
+#> 6              hazard                      perigo susceptibility cartography
+#> 7         debris_flow            corrida_de_massa    debris flow cartography
+#> 8      relief_pattern               padrao_relevo relief pattern cartography
+#> 9 occurrence_approved     homolog_desastre_google     occurrence  occurrence
+#>         key        scope queryable
+#> 1 cd_geocmu municipality      TRUE
+#> 2 cd_geocmu municipality      TRUE
+#> 3 municipio municipality      TRUE
+#> 4 municipio     national      TRUE
+#> 5 municipio     national      TRUE
+#> 6 cd_geocmu municipality     FALSE
+#> 7 municipio municipality     FALSE
+#> 8 municipio municipality     FALSE
+#> 9 municipio     national     FALSE
 
-# What the SGB holds for one municipality
+# What the SGB holds for Angra dos Reis-RJ municipality
 sgb_inventory("Angra dos Reis", state = "RJ")
+#>        name_muni abbrev_state theme product        type n_features
+#> 1 Angra dos Reis           RJ  risk    risk cartography         75
+#> 2 Angra dos Reis           RJ flood   flood cartography        198
 
-# ... or for a whole state
-sgb_inventory(state = "RJ", by = "state")
+# ... or for a whole state, one row per product and municipality
+rj <- sgb_inventory(state = "RJ", by = "state")
+
+rj |>
+  count(product, name = "municipalities")
+#>   product municipalities
+#> 1   flood             91
+#> 2    risk              5
+
+rj |>
+  filter(product == "risk")
+#>   product theme abbrev_state            name_muni code_muni
+#> 1    risk  risk           RJ       ANGRA DOS REIS   3300100
+#> 2    risk  risk           RJ            CANTAGALO   3301108
+#> 3    risk  risk           RJ        NOVA FRIBURGO   3303401
+#> 4    risk  risk           RJ SANTA MARIA MADALENA   3304607
+#> 5    risk  risk           RJ            SUMIDOURO   3305703
 ```
 
 If a municipality name is ambiguous, `state` disambiguates it. The IBGE
@@ -41,6 +80,8 @@ finds it offline:
 ``` r
 
 sgb_municipalities(search = "angra")
+#>   code_muni      name_muni abbrev_state
+#> 1   3300100 Angra dos Reis           RJ
 ```
 
 ## Reading the risk sectorisation
@@ -50,41 +91,76 @@ sgb_municipalities(search = "angra")
 angra <- read_sgb("risk", municipality = "Angra dos Reis", state = "RJ")
 
 nrow(angra)
+#> [1] 75
 names(angra)
+#>  [1] "objectid"                           "abbrev_state"                      
+#>  [3] "name_muni"                          "code_muni"                         
+#>  [5] "num_setor"                          "survey_date"                       
+#>  [7] "locality"                           "process_type"                      
+#>  [9] "process_subtype"                    "cobrade"                           
+#> [11] "tipolo_g2"                          "tipolo_e2"                         
+#> [13] "cobrade_02"                         "tipolo_g3"                         
+#> [15] "tipolo_e3"                          "cobrade_03"                        
+#> [17] "tipolo_g4"                          "tipolo_e4"                         
+#> [19] "cobrade_04"                         "tipolo_g5"                         
+#> [21] "tipolo_e5"                          "cobrade_05"                        
+#> [23] "descricao"                          "obs_ocup"                          
+#> [25] "grau_vulne"                         "risk_level"                        
+#> [27] "n_buildings"                        "n_households"                      
+#> [29] "n_people"                           "sug_interv"                        
+#> [31] "orgao_exec"                         "Shape__Length"                     
+#> [33] "Shape__Area"                        "gestao_territorial.risco.risco.fid"
+#> [35] "geometry"
 sf::st_crs(angra)$epsg  # 4674, SIRGAS 2000
+#> [1] 4674
 ```
-
-Field names come back in English, while the values remain as the SGB
-publishes them — `risk_level` takes `"Alto"` and `"Muito alto"`. The
-mapping from the original SGB field names is documented in
-[`?read_sgb`](https://pedreirajr.github.io/geohazards/reference/read_sgb.md).
 
 ## Exposure in risk sectors
 
 `n_people`, `n_buildings` and `n_households` are the SGB’s own
-per-sector estimates. Summarising them takes one line, so the package
-does not wrap it:
+per-sector estimates. Summarising them takes a short **dplyr** pipeline,
+so the package does not wrap it:
 
 ``` r
 
 exposure <- sf::st_drop_geometry(angra)
 
 # Total exposure
-colSums(exposure[c("n_people", "n_buildings", "n_households")], na.rm = TRUE)
+exposure |>
+  summarise(across(c(n_people, n_buildings, n_households),
+                   \(x) sum(x, na.rm = TRUE)))
+#>   n_people n_buildings n_households
+#> 1    44848       11211        16168
 
 # Broken down by risk level
-aggregate(
-  cbind(n_people, n_buildings, n_households) ~ risk_level,
-  data = exposure, FUN = sum, na.rm = TRUE
-)
+exposure |>
+  summarise(
+    sectors = n(),
+    across(c(n_people, n_buildings, n_households), \(x) sum(x, na.rm = TRUE)),
+    .by = risk_level
+  )
+#>   risk_level sectors n_people n_buildings n_households
+#> 1       Alto      44    31944        7986        10742
+#> 2 Muito alto      31    12904        3225         5426
 ```
 
 The same works per process type, which is often the more actionable cut:
 
 ``` r
 
-aggregate(n_people ~ process_type + risk_level, data = exposure,
-          FUN = sum, na.rm = TRUE)
+exposure |>
+  summarise(sectors = n(), n_people = sum(n_people, na.rm = TRUE),
+            .by = c(process_type, risk_level)) |>
+  arrange(desc(n_people))
+#>       process_type risk_level sectors n_people
+#> 1     Deslizamento       Alto      38    22424
+#> 2     Deslizamento Muito alto      26    11144
+#> 3 Corrida de massa       Alto       4     6920
+#> 4          Rastejo       Alto       1     2104
+#> 5        Enxurrada Muito alto       2     1060
+#> 6            Queda       Alto       1      496
+#> 7            Queda Muito alto       2      420
+#> 8 Corrida de massa Muito alto       1      280
 ```
 
 ## An interactive map
@@ -123,8 +199,8 @@ fields <- c("locality", "process_type", "process_subtype", "risk_level",
 labels <- c("Locality", "Process", "Specific type", "Risk level",
             "Surveyed", "People")
 
-popup_data <- angra[, fields]
-names(popup_data)[match(fields, names(popup_data))] <- labels
+popup_data <- angra |>
+  select(all_of(setNames(fields, labels)))
 
 mapview(
   angra,
@@ -141,7 +217,9 @@ To colour by a combination of fields — say risk level *and* process type
 
 ``` r
 
-angra$risk_process <- paste(angra$risk_level, angra$process_type, sep = " | ")
+angra <- angra |>
+  mutate(risk_process = paste(risk_level, process_type, sep = " | "))
+
 mapview(angra, zcol = "risk_process", map.types = "Esri.WorldImagery")
 ```
 
@@ -177,13 +255,32 @@ boundary <- geobr::read_municipality(code_muni = 3300100, year = 2022,
 hand <- read_hand(boundary)
 
 # Mean HAND under each risk sector
-angra$hand_mean <- terra::extract(
-  hand, terra::vect(sf::st_transform(angra, 4326)), fun = mean, na.rm = TRUE
-)[, 2]
+angra <- angra |>
+  mutate(hand_mean = terra::extract(
+    hand, terra::vect(sf::st_transform(angra, 4326)), fun = mean, na.rm = TRUE
+  )[, 2])
 ```
 
 Sectors with a low mean HAND and a high risk level are the ones where
-flooding and mapped geological risk coincide.
+flooding and mapped geological risk coincide:
+
+``` r
+
+angra |>
+  sf::st_drop_geometry() |>
+  summarise(sectors = n(), mean_hand = mean(hand_mean, na.rm = TRUE),
+            .by = c(risk_level, process_type)) |>
+  arrange(mean_hand)
+#>   risk_level     process_type sectors mean_hand
+#> 1       Alto Corrida de massa       4  47.14824
+#> 2 Muito alto            Queda       2  47.92051
+#> 3       Alto          Rastejo       1  48.35580
+#> 4       Alto            Queda       1  50.42272
+#> 5       Alto     Deslizamento      38  53.80006
+#> 6 Muito alto     Deslizamento      26  59.39246
+#> 7 Muito alto Corrida de massa       1  69.19034
+#> 8 Muito alto        Enxurrada       2  80.08294
+```
 
 ## Technical reports
 
@@ -198,8 +295,14 @@ downloads and extracts the whole package:
 report <- read_sgb_report("doc/17701")
 
 report$item$title
-report$files
+#> [1] "Ação emergencial para delimitação de áreas em alto e muito alto risco a enchentes, Inundações e movimentos de massa: Acrelândia, AC"
+report$bitstreams[c("name", "bytes")]
+#>                               name  bytes
+#> 1 produtos_acrelandia_ac_risco.zip 531553
 ```
+
+The example handle is the report for Acrelândia (AC); any other RIGeo
+item works the same way.
 
 ## Source
 

@@ -58,6 +58,16 @@
 <code><a href="../reference/read_sgb_report.html">read_sgb_report()</a></code> downloads and extracts a technical report from RIGeo, the institutional repository of the SGB.</li>
 </ul><p>Field names returned by the SGB are translated to English, and the dates the server encodes as epoch milliseconds are returned as <code>Date</code>. The original SGB field names are documented in each function’s <code>Value</code> section.</p>
 </div>
+<div class="section level3">
+<h3 id="bug-fixes-0-2-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-2-0"></a></h3>
+<ul><li>
+<code>sgb_inventory(by = "state")</code> and <code>by = "country"</code> no longer drop the risk sectorisation. The request asked the risk layers for a <code>municipio</code> field they do not have (theirs is <code>munic</code>), the server failed, and only the flood mapping came back. A layer with nothing mapped in the area is now skipped silently instead of reported as “No response from the SGB”.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="minor-improvements-0-2-0">Minor improvements<a class="anchor" aria-label="anchor" href="#minor-improvements-0-2-0"></a></h3>
+<ul><li>
+<code><a href="../reference/read_hand.html">read_hand()</a></code> names the layer of the returned raster <code>hand</code>, instead of the temporary name terra assigns, so it reads cleanly in <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> and in <code><a href="https://rspatial.github.io/terra/reference/as.data.frame.html" class="external-link">as.data.frame()</a></code>.</li>
+</ul></div>
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="geohazards-010">geohazards 0.1.0<a class="anchor" aria-label="anchor" href="#geohazards-010"></a></h2>

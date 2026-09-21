@@ -76,7 +76,7 @@ cell sits above the drainage channel it flows into. It is a relative
 elevation, not an absolute one: a cell 2 m above its channel is close to
 the water level whether it stands at 10 m or at 1000 m of altitude. That
 makes it one of the cheapest proxies for flood susceptibility available
-globally — low HAND means the terrain is near the level the water
+globally, as low HAND means the terrain is near the level the water
 reaches.</p>
 <blockquote>
 <p>Nobre, A. D., Cuartas, L. A., Hodnett, M., Rennó, C. D., Rodrigues,
@@ -89,15 +89,16 @@ the Copernicus 30 m DEM, clipped to any polygon you give it.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://pedreirajr.github.io/geohazards/">geohazards</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://rspatial.org/" class="external-link">terra</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-spatial.github.io/sf/" class="external-link">sf</a></span><span class="op">)</span></span></code></pre></div>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-spatial.github.io/sf/" class="external-link">sf</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="reading-a-raster-for-an-area">Reading a raster for an area<a class="anchor" aria-label="anchor" href="#reading-a-raster-for-an-area"></a>
 </h2>
 <p><code><a href="../reference/read_hand.html">read_hand()</a></code> takes an <code>sf</code> object with POLYGON
-or MULTIPOLYGON geometry. Any polygon works — a watershed, a
-neighbourhood, a study area drawn by hand — but municipal boundaries are
-the most common case, and <strong>geobr</strong> provides the official
-IBGE ones:</p>
+or MULTIPOLYGON geometry. Any polygon works (a watershed, a
+neighbourhood, a study area drawn by hand), but municipal boundaries are
+the most common case. In the Brazilian case, <strong>geobr</strong>
+provides the official IBGE ones:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Lauro de Freitas (BA): small, coastal, and covered by a single tile</span></span>
 <span><span class="va">muni</span> <span class="op">&lt;-</span> <span class="fu">geobr</span><span class="fu">::</span><span class="fu"><a href="https://ipea.github.io/geobr/reference/read_municipality.html" class="external-link">read_municipality</a></span><span class="op">(</span>code_muni <span class="op">=</span> <span class="fl">2919207</span>, year <span class="op">=</span> <span class="fl">2022</span>,</span>
@@ -106,12 +107,23 @@ IBGE ones:</p>
 <span><span class="va">hand</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_hand.html">read_hand</a></span><span class="op">(</span><span class="va">muni</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">hand</span></span>
+<span><span class="co">#&gt; class       : SpatRaster</span></span>
+<span><span class="co">#&gt; size        : 366, 356, 1  (nrow, ncol, nlyr)</span></span>
+<span><span class="co">#&gt; resolution  : 0.0002777778, 0.0002777778  (x, y)</span></span>
+<span><span class="co">#&gt; extent      : -38.37403, -38.27514, -12.91097, -12.80931  (xmin, xmax, ymin, ymax)</span></span>
+<span><span class="co">#&gt; coord. ref. : lon/lat WGS 84 (EPSG:4326)</span></span>
+<span><span class="co">#&gt; source(s)   : memory</span></span>
+<span><span class="co">#&gt; varname     : hand</span></span>
+<span><span class="co">#&gt; name        :      hand</span></span>
+<span><span class="co">#&gt; min value   :         0</span></span>
+<span><span class="co">#&gt; max value   : 65.981606</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">hand</span><span class="op">)</span></span></code></pre></div>
+<p><img src="hand-flood-susceptibility_files/figure-html/read-1.png" alt="" width="100%"></p>
 <p>Nothing is downloaded in full. The GLO-30 HAND tiles are Cloud
 Optimized GeoTIFFs, so only the blocks that intersect the polygon travel
 over the network. <code><a href="../reference/read_hand.html">read_hand()</a></code> reports how many 1×1 degree
-tiles the area spans, which is a good sanity check: a request covering
-many tiles is a large request, even with COG.</p>
+tiles the area spans, which is a good sanity check, given that a request
+covering many tiles is a large request, even with COG.</p>
 <p>Values are in <strong>metres above the nearest drainage</strong>, and
 the raster is masked to the boundary, so cells outside the polygon are
 <code>NA</code>.</p>
@@ -119,59 +131,81 @@ the raster is masked to the boundary, so cells outside the polygon are
 <h3 id="coordinate-systems">Coordinate systems<a class="anchor" aria-label="anchor" href="#coordinate-systems"></a>
 </h3>
 <p>The dataset is published in WGS84 (EPSG:4326), and that is what comes
-back by default, whatever the CRS of <code>place</code> — the polygon is
+back by default, whatever the CRS of <code>place</code>. The polygon is
 reprojected internally for tile discovery, never the other way
 round.</p>
-<p>Degrees are awkward for anything involving area or distance. Pass an
-appropriate projected CRS to get a raster in metres:</p>
+<p>If you wish a projected CRS to get a raster in metres, use the
+<code>crs_output</code> argument:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># UTM zone 24S, metric units</span></span>
 <span><span class="va">hand_utm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_hand.html">read_hand</a></span><span class="op">(</span><span class="va">muni</span>, crs_output <span class="op">=</span> <span class="fl">31984</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/dimensions.html" class="external-link">res</a></span><span class="op">(</span><span class="va">hand_utm</span><span class="op">)</span>  <span class="co"># cell size in metres</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/dimensions.html" class="external-link">res</a></span><span class="op">(</span><span class="va">hand_utm</span><span class="op">)</span>  <span class="co"># cell size in metres</span></span>
+<span><span class="co">#&gt; [1] 30.44014 30.44014</span></span></code></pre></div>
 <p>Reprojection uses bilinear resampling, which is the right choice for
-a continuous surface. Do it once, at reading time, rather than
-reprojecting derived products later.</p>
+a continuous surface. With <code>crs_output</code> you can do it once,
+at reading time, rather than reprojecting derived products later.</p>
 </div>
 <div class="section level3">
 <h3 id="several-polygons-at-once">Several polygons at once<a class="anchor" aria-label="anchor" href="#several-polygons-at-once"></a>
 </h3>
 <p>When <code>place</code> has more than one feature, the features are
-unioned and the raster is masked to the combined boundary — one raster,
-not a list:</p>
+unioned and the raster is masked to the combined boundary:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Lauro de Freitas and its neighbour Simoes Filho</span></span>
 <span><span class="va">neighbours</span> <span class="op">&lt;-</span> <span class="fu">geobr</span><span class="fu">::</span><span class="fu"><a href="https://ipea.github.io/geobr/reference/read_municipality.html" class="external-link">read_municipality</a></span><span class="op">(</span>code_muni <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2919207</span>, <span class="fl">2930709</span><span class="op">)</span>,</span>
 <span>                                       year <span class="op">=</span> <span class="fl">2022</span>, showProgress <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span><span class="va">hand_pair</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_hand.html">read_hand</a></span><span class="op">(</span><span class="va">neighbours</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">hand_pair</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_hand.html">read_hand</a></span><span class="op">(</span><span class="va">neighbours</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">hand_pair</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_geometry.html" class="external-link">st_geometry</a></span><span class="op">(</span><span class="va">neighbours</span><span class="op">)</span>, add <span class="op">=</span> <span class="cn">TRUE</span>, border <span class="op">=</span> <span class="st">"grey30"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="hand-flood-susceptibility_files/figure-html/multiple-1.png" alt="" width="100%"></p>
 </div>
 </div>
 <div class="section level2">
 <h2 id="reading-the-values">Reading the values<a class="anchor" aria-label="anchor" href="#reading-the-values"></a>
 </h2>
-<p>The interpretation is ordinal: lower means more susceptible. There is
-no universal cut-off that turns HAND into a flood map, and the sensible
-threshold depends on the basin, the channel network used to derive the
-product and the return period you have in mind. Values in the single
-digits of metres are the usual starting point, and the result should be
-treated as a screening layer, not as a flood hazard map.</p>
+<p>There is no universal cut-off that turns HAND into a flood map, and
+the sensible threshold depends on the basin, the channel network used to
+derive the product and the return period you have in mind. Values in the
+single digits of metres are the usual starting point, and the result
+should be treated as a screening layer.</p>
+<p>To explore the values with <strong>dplyr</strong>, take them out of
+the raster as a data frame, one row per cell in a column named
+<code>hand</code> (<code>na.rm = TRUE</code> drops the cells outside the
+boundary):</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Where the values sit for this area</span></span>
-<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/global.html" class="external-link">global</a></span><span class="op">(</span><span class="va">hand</span>, fun <span class="op">=</span> <span class="st">"mean"</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/values.html" class="external-link">values</a></span><span class="op">(</span><span class="va">hand</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.05</span>, <span class="fl">0.25</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>, <span class="fl">0.95</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">hand_values</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">hand</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/hist.html" class="external-link">hist</a></span><span class="op">(</span><span class="fu"><a href="https://rspatial.github.io/terra/reference/values.html" class="external-link">values</a></span><span class="op">(</span><span class="va">hand</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, breaks <span class="op">=</span> <span class="fl">50</span>,</span>
-<span>     main <span class="op">=</span> <span class="st">"HAND distribution"</span>, xlab <span class="op">=</span> <span class="st">"Metres above nearest drainage"</span><span class="op">)</span></span></code></pre></div>
-<p>A screening mask is a single comparison:</p>
+<span><span class="va">hand_values</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span></span>
+<span>    cells <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/context.html" class="external-link">n</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    mean <span class="op">=</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/summarize-generics.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">hand</span><span class="op">)</span>,</span>
+<span>    p05 <span class="op">=</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">hand</span>, <span class="fl">0.05</span><span class="op">)</span>,</span>
+<span>    median <span class="op">=</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/summarize-generics.html" class="external-link">median</a></span><span class="op">(</span><span class="va">hand</span><span class="op">)</span>,</span>
+<span>    p95 <span class="op">=</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">hand</span>, <span class="fl">0.95</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="co">#&gt;   cells     mean p05   median      p95</span></span>
+<span><span class="co">#&gt; 1 63390 9.654945   0 6.339997 30.78297</span></span></code></pre></div>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rspatial.github.io/terra/reference/hist.html" class="external-link">hist</a></span><span class="op">(</span><span class="va">hand_values</span><span class="op">$</span><span class="va">hand</span>, breaks <span class="op">=</span> <span class="fl">50</span>,</span>
+<span>     main <span class="op">=</span> <span class="st">"HAND distribution"</span>, xlab <span class="op">=</span> <span class="st">"Metres above nearest drainage"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="hand-flood-susceptibility_files/figure-html/distribution-1.png" alt="" width="100%"></p>
+<p>A screening mask is a single comparison:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">lowland</span> <span class="op">&lt;-</span> <span class="va">hand</span> <span class="op">&lt;</span> <span class="fl">5</span></span>
-<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">lowland</span>, main <span class="op">=</span> <span class="st">"Terrain within 5 m of the nearest drainage"</span><span class="op">)</span></span>
-<span></span>
+<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">lowland</span>, main <span class="op">=</span> <span class="st">"Terrain within 5 m of the nearest drainage"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="hand-flood-susceptibility_files/figure-html/mask-1.png" alt="" width="100%"></p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
 <span><span class="co"># Share of the municipality below the threshold</span></span>
-<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/global.html" class="external-link">global</a></span><span class="op">(</span><span class="va">lowland</span>, fun <span class="op">=</span> <span class="st">"mean"</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">hand_values</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>share_below_5m <span class="op">=</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/summarize-generics.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">hand</span> <span class="op">&lt;</span> <span class="fl">5</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;   share_below_5m</span></span>
+<span><span class="co">#&gt; 1      0.4398959</span></span></code></pre></div>
 <p>Classifying into bands is often more honest than a binary mask,
 because it keeps the gradient visible:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">bands</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>   <span class="fl">0</span>,  <span class="fl">2</span>, <span class="fl">1</span>,   <span class="co"># very low terrain, closest to the channel</span></span>
 <span>   <span class="fl">2</span>,  <span class="fl">5</span>, <span class="fl">2</span>,</span>
@@ -181,33 +215,21 @@ because it keeps the gradient visible:</p>
 <span></span>
 <span><span class="va">hand_class</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/classify.html" class="external-link">classify</a></span><span class="op">(</span><span class="va">hand</span>, <span class="va">bands</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">hand_class</span>, main <span class="op">=</span> <span class="st">"HAND bands"</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="extracting-values-for-other-features">Extracting values for other features<a class="anchor" aria-label="anchor" href="#extracting-values-for-other-features"></a>
-</h2>
-<p>The most useful thing about a HAND raster is rarely the raster
-itself: it is the value under the features you already care about —
-buildings, schools, census tracts, risk sectors.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sectors</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_sgb.html">read_sgb</a></span><span class="op">(</span><span class="st">"risk"</span>, municipality <span class="op">=</span> <span class="st">"Angra dos Reis"</span>, state <span class="op">=</span> <span class="st">"RJ"</span><span class="op">)</span></span>
-<span><span class="va">hand_angra</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_hand.html">read_hand</a></span><span class="op">(</span><span class="va">sectors</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">sectors</span><span class="op">$</span><span class="va">hand_mean</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/extract.html" class="external-link">extract</a></span><span class="op">(</span></span>
-<span>  <span class="va">hand_angra</span>, <span class="fu"><a href="https://rspatial.github.io/terra/reference/vect.html" class="external-link">vect</a></span><span class="op">(</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_transform.html" class="external-link">st_transform</a></span><span class="op">(</span><span class="va">sectors</span>, <span class="fl">4326</span><span class="op">)</span><span class="op">)</span>, fun <span class="op">=</span> <span class="va">mean</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span></span>
-<span></span>
-<span><span class="va">sectors</span><span class="op">$</span><span class="va">hand_min</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/extract.html" class="external-link">extract</a></span><span class="op">(</span></span>
-<span>  <span class="va">hand_angra</span>, <span class="fu"><a href="https://rspatial.github.io/terra/reference/vect.html" class="external-link">vect</a></span><span class="op">(</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_transform.html" class="external-link">st_transform</a></span><span class="op">(</span><span class="va">sectors</span>, <span class="fl">4326</span><span class="op">)</span><span class="op">)</span>, fun <span class="op">=</span> <span class="va">min</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span></span></code></pre></div>
-<p>Sectors that the SGB mapped as high geological risk <em>and</em> that
-sit a couple of metres above the nearest drainage are where two
-independent lines of evidence agree. See the article on the SGB
-cartography for what those sectors contain.</p>
-<p>For point data, the same call returns one row per point:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">points</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>lon <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">44.32</span>, <span class="op">-</span><span class="fl">44.30</span><span class="op">)</span>, lat <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">22.97</span>, <span class="op">-</span><span class="fl">22.99</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>                   coords <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lon"</span>, <span class="st">"lat"</span><span class="op">)</span>, crs <span class="op">=</span> <span class="fl">4326</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/extract.html" class="external-link">extract</a></span><span class="op">(</span><span class="va">hand_angra</span>, <span class="fu"><a href="https://rspatial.github.io/terra/reference/vect.html" class="external-link">vect</a></span><span class="op">(</span><span class="va">points</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><img src="hand-flood-susceptibility_files/figure-html/classify-1.png" alt="" width="100%"></p>
+<p>The same bands, counted on the data frame, give the share of the area
+in each:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">hand_values</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>band <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/cut.html" class="external-link">cut</a></span><span class="op">(</span><span class="va">hand</span>, breaks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">2</span>, <span class="fl">5</span>, <span class="fl">15</span>, <span class="cn">Inf</span><span class="op">)</span>,</span>
+<span>                    labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"0-2 m"</span>, <span class="st">"2-5 m"</span>, <span class="st">"5-15 m"</span>, <span class="st">"&gt; 15 m"</span><span class="op">)</span>,</span>
+<span>                    include.lowest <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/count.html" class="external-link">count</a></span><span class="op">(</span><span class="va">band</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>share <span class="op">=</span> <span class="va">n</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;     band     n     share</span></span>
+<span><span class="co">#&gt; 1  0-2 m 18659 0.2943524</span></span>
+<span><span class="co">#&gt; 2  2-5 m  9226 0.1455435</span></span>
+<span><span class="co">#&gt; 3 5-15 m 19747 0.3115160</span></span>
+<span><span class="co">#&gt; 4 &gt; 15 m 15758 0.2485881</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="mapping">Mapping<a class="anchor" aria-label="anchor" href="#mapping"></a>
@@ -215,27 +237,29 @@ cartography for what those sectors contain.</p>
 <p>The raster is a plain <code>SpatRaster</code>, so every terra and
 ggplot2 workflow applies. A palette that goes from wet to dry reads
 better than the default:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">hand</span>, col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/palettes.html" class="external-link">hcl.colors</a></span><span class="op">(</span><span class="fl">50</span>, <span class="st">"Blues"</span>, rev <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>     main <span class="op">=</span> <span class="st">"Height above nearest drainage (m)"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rspatial.github.io/terra/reference/plot.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_geometry.html" class="external-link">st_geometry</a></span><span class="op">(</span><span class="va">muni</span><span class="op">)</span>, add <span class="op">=</span> <span class="cn">TRUE</span>, border <span class="op">=</span> <span class="st">"grey30"</span><span class="op">)</span></span></code></pre></div>
-<p>With <strong>ggplot2</strong>, convert to a data frame first:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<p><img src="hand-flood-susceptibility_files/figure-html/map-1.png" alt="" width="100%"></p>
+<p>With <strong>ggplot2</strong>, convert to a data frame with the cell
+coordinates first:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">hand_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rspatial.github.io/terra/reference/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">hand</span>, xy <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rspatial.github.io/terra/reference/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">hand_df</span><span class="op">)</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"hand"</span></span>
 <span></span>
 <span><span class="fu">ggplot</span><span class="op">(</span><span class="va">hand_df</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, fill <span class="op">=</span> <span class="va">hand</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">geom_raster</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">scale_fill_viridis_c</span><span class="op">(</span>name <span class="op">=</span> <span class="st">"HAND (m)"</span>, direction <span class="op">=</span> <span class="op">-</span><span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">coord_sf</span><span class="op">(</span>crs <span class="op">=</span> <span class="fl">4326</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">theme_minimal</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><img src="hand-flood-susceptibility_files/figure-html/ggplot-1.png" alt="" width="100%"></p>
 </div>
 <div class="section level2">
 <h2 id="exporting">Exporting<a class="anchor" aria-label="anchor" href="#exporting"></a>
 </h2>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rspatial.github.io/terra/reference/writeRaster.html" class="external-link">writeRaster</a></span><span class="op">(</span><span class="va">hand</span>, <span class="st">"hand.tif"</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Smaller file, same values, for sharing</span></span>
@@ -247,10 +271,9 @@ better than the default:</p>
 </h2>
 <ul>
 <li>
-<strong>HAND is not a flood map.</strong> It describes terrain, not
-water. It knows nothing about rainfall, river discharge, drainage
-infrastructure, tides or dams, and a cell can be low above its channel
-and still rarely flood.</li>
+<strong>HAND is not a flood map.</strong> It knows nothing about
+rainfall, river discharge, drainage infrastructure, tides or dams, and a
+cell can be low above its channel and still rarely flood.</li>
 <li>
 <strong>The drainage network is modelled</strong>, derived from the
 DEM, so HAND inherits every error of the underlying elevation model.
