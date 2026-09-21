@@ -1,0 +1,44 @@
+url: https://pedreirajr.github.io/geohazards/
+
+template:
+  bootstrap: 5
+
+navbar:
+  structure:
+    left: [intro, reference, articles, news]
+    right: [search, github]
+
+articles:
+- title: Data sources
+  navbar: ~
+  contents:
+  - matches("hand-flood-susceptibility")
+  - matches("sgb-risk-mapping")
+
+reference:
+- title: Flood susceptibility
+  desc: >
+    GLO-30 HAND (Height Above the Nearest Drainage), read remotely from Cloud
+    Optimized GeoTIFFs.
+  contents:
+  - read_hand
+
+- title: Geological risk cartography (SGB/CPRM)
+  desc: >
+    Risk sectorisation, flood mapping and disaster occurrences published by the
+    Geological Survey of Brazil, plus its technical reports.
+  contents:
+  - read_sgb
+  - read_sgb_report
+
+- title: Catalogue and lookup
+  desc: >
+    What exists before downloading it, and how to name the area you want.
+  contents:
+  - sgb_products
+  - sgb_inventory
+  - sgb_municipalities
+
+- title: Package
+  contents:
+  - geohazards-package

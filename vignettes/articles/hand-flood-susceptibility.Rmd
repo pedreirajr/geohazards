@@ -11,12 +11,19 @@ knitr::opts_chunk$set(
 )
 ```
 
-HAND (Height Above the Nearest Drainage) measures, for every cell of a terrain
-model, how high that cell sits above the drainage channel it flows into. It is
-a relative elevation, not an absolute one: a cell 2 m above its channel is
-close to the water level whether it stands at 10 m or at 1000 m of altitude.
-That makes it one of the cheapest proxies for flood susceptibility available
-globally — low HAND means the terrain is near the level the water reaches.
+HAND (Height Above the Nearest Drainage), introduced by Nobre et al. (2011),
+measures, for every cell of a terrain model, how high that cell sits above the
+drainage channel it flows into. It is a relative elevation, not an absolute
+one: a cell 2 m above its channel is close to the water level whether it
+stands at 10 m or at 1000 m of altitude. That makes it one of the cheapest
+proxies for flood susceptibility available globally — low HAND means the
+terrain is near the level the water reaches.
+
+> Nobre, A. D., Cuartas, L. A., Hodnett, M., Rennó, C. D., Rodrigues, G.,
+> Silveira, A., Waterloo, M., & Saleska, S. (2011). Height Above the Nearest
+> Drainage – a hydrologically relevant new terrain model. *Journal of
+> Hydrology*, 404(1–2), 13–29.
+> <https://doi.org/10.1016/j.jhydrol.2011.03.051>
 
 `read_hand()` returns the GLO-30 HAND raster, derived from the Copernicus
 30 m DEM, clipped to any polygon you give it.
@@ -212,7 +219,6 @@ writeRaster(hand, "hand_compressed.tif", overwrite = TRUE,
 
 GLO-30 HAND, published on the
 [AWS Open Data registry](https://registry.opendata.aws/glo-30-hand/) and
-derived from the Copernicus GLO-30 DEM. The HAND terrain descriptor was
-introduced by [Nobre et al.
-(2011)](https://www.sciencedirect.com/science/article/abs/pii/S0022169411002599).
+derived from the Copernicus GLO-30 DEM. The HAND terrain descriptor itself is
+due to Nobre et al. (2011), cited at the top of this article.
 Municipality boundaries come from the IBGE mesh, through **geobr**.

@@ -9,3 +9,6 @@
 ^data-raw$
 ^vignettes/articles$
 ^README_cache$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
