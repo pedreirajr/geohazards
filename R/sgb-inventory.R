@@ -159,8 +159,11 @@ sgb_inventory <- function(municipality = NULL, state = NULL, code_muni = NULL,
   rows <- list()
   for (i in seq_len(nrow(layers))) {
     layer <- layers[i, ]
-    # One distinct-values request per layer: fast even country-wide.
-    fields <- if (layer$key == "cd_geocmu") "uf,municipio,cd_geocmu" else "uf,municipio"
+    # One distinct-values request per layer: fast even country-wide. The
+    # layers keyed by IBGE code call the name field `munic`, the others
+    # `municipio`; asking for a field a layer lacks makes the server fail.
+    name_field <- if (layer$key == "cd_geocmu") "munic" else "municipio"
+    fields <- if (layer$key == "cd_geocmu") "uf,munic,cd_geocmu" else "uf,municipio"
 
     body <- tryCatch(
       .gh_request(.sgb_query_url(layer$service)) |>
@@ -169,7 +172,7 @@ sgb_inventory <- function(municipality = NULL, state = NULL, code_muni = NULL,
           outFields = fields,
           returnDistinctValues = "true",
           returnGeometry = "false",
-          orderByFields = "uf,municipio",
+          orderByFields = paste0("uf,", name_field),
           f = "json"
         ) |>
         httr2::req_perform() |>
@@ -177,17 +180,19 @@ sgb_inventory <- function(municipality = NULL, state = NULL, code_muni = NULL,
       error = function(e) NULL
     )
 
-    if (is.null(body) || !length(body$features)) {
+    if (is.null(body) || !is.null(body$error)) {
       cli::cli_warn("No response from the SGB for {.val {layer$product}}.")
       next
     }
+    # A layer with nothing mapped in the area is an answer, not a failure.
+    if (!length(body$features)) next
 
     part <- do.call(rbind, lapply(body$features, function(feature) {
       data.frame(
         product = layer$product,
         theme = layer$theme,
         abbrev_state = as.character(.nz(feature$attributes$uf)),
-        name_muni = as.character(.nz(feature$attributes$municipio)),
+        name_muni = as.character(.nz(feature$attributes[[name_field]])),
         code_muni = as.character(.nz(feature$attributes$cd_geocmu)),
         stringsAsFactors = FALSE
       )

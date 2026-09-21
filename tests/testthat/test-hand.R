@@ -33,6 +33,23 @@ test_that("read_hand returns a SpatRaster (offline)", {
   expect_s4_class(result, "SpatRaster")
 })
 
+test_that("read_hand names the layer `hand` (offline)", {
+  result <- with_mocked_bindings(
+    read_hand(.hand_fixture_place()),
+    .hand_build_vrt = mock_hand_build_vrt,
+    .package = "geohazards"
+  )
+  expect_identical(names(result), "hand")
+  expect_identical(terra::varnames(result), "hand")
+
+  projected <- with_mocked_bindings(
+    read_hand(.hand_fixture_place(), crs_output = 31984),
+    .hand_build_vrt = mock_hand_build_vrt,
+    .package = "geohazards"
+  )
+  expect_identical(names(projected), "hand")
+})
+
 test_that("read_hand output CRS is WGS84 by default (offline)", {
   result <- with_mocked_bindings(
     read_hand(.hand_fixture_place()),

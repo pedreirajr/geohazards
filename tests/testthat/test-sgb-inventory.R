@@ -90,4 +90,8 @@ test_that("sgb_inventory lists the mapped municipalities of a state", {
   expect_s3_class(result, "data.frame")
   expect_gt(nrow(result), 0L)
   expect_true(all(result$abbrev_state == "BA"))
+  # The risk layer names its field `munic`, not `municipio`: asking for the
+  # wrong one made the server fail and risk vanish from the inventory.
+  expect_true("risk" %in% result$product)
+  expect_false(anyNA(result$name_muni[result$product == "risk"]))
 })

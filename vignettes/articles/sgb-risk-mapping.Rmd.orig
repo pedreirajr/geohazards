@@ -1,0 +1,229 @@
+---
+title: "Mapping geological risk with the SGB"
+output: rmarkdown::html_document
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE,
+  fig.path = "sgb-risk-mapping_files/figure-html/",
+  out.width = "100%"
+)
+# Embed the layers in the page instead of writing them as side files
+mapview::mapviewOptions(fgb = FALSE)
+```
+
+The Geological Survey of Brazil (SGB/CPRM) maps, municipality by municipality,
+the sectors where people live under geological risk (landslides, debris flows,
+flash floods). `geohazards` reads that cartography directly into R.
+
+This article goes through a full workflow, finding out what exists, downloading
+it, summarising the exposure, mapping it interactively and exporting it.
+
+```{r setup}
+library(geohazards)
+library(dplyr)
+```
+
+## What exists before you download it
+
+The SGB mapping is not universal, and the server can be slow enough that it pays to ask before downloading. `sgb_inventory()` counts features without transferring
+any geometry.
+
+```{r inventory}
+# The catalogue of products and the identifier each one is requested by
+sgb_products()
+
+# What the SGB holds for Angra dos Reis-RJ municipality
+sgb_inventory("Angra dos Reis", state = "RJ")
+
+# ... or for a whole state, one row per product and municipality
+rj <- sgb_inventory(state = "RJ", by = "state")
+
+rj |>
+  count(product, name = "municipalities")
+
+rj |>
+  filter(product == "risk")
+```
+
+If a municipality name is ambiguous, `state` disambiguates it. The IBGE code is
+never ambiguous, and `sgb_municipalities()` finds it offline:
+
+```{r lookup}
+sgb_municipalities(search = "angra")
+```
+
+## Reading the risk sectorisation
+
+```{r read}
+angra <- read_sgb("risk", municipality = "Angra dos Reis", state = "RJ")
+
+nrow(angra)
+names(angra)
+sf::st_crs(angra)$epsg  # 4674, SIRGAS 2000
+```
+
+<!--
+Ajustar isso posteriormente. Vamos alterar os valores das variáveis também?
+
+"Field names come back in English, while the values remain as the SGB publishes
+them. The mapping from the original SGB field names is documented in `?read_sgb`."
+-->
+
+## Exposure in risk sectors
+
+`n_people`, `n_buildings` and `n_households` are the SGB's own per-sector
+estimates. Summarising them takes a short **dplyr** pipeline, so the package
+does not wrap it:
+
+```{r exposure}
+exposure <- sf::st_drop_geometry(angra)
+
+# Total exposure
+exposure |>
+  summarise(across(c(n_people, n_buildings, n_households),
+                   \(x) sum(x, na.rm = TRUE)))
+
+# Broken down by risk level
+exposure |>
+  summarise(
+    sectors = n(),
+    across(c(n_people, n_buildings, n_households), \(x) sum(x, na.rm = TRUE)),
+    .by = risk_level
+  )
+```
+
+The same works per process type, which is often the more actionable cut:
+
+```{r exposure-by-process}
+exposure |>
+  summarise(sectors = n(), n_people = sum(n_people, na.rm = TRUE),
+            .by = c(process_type, risk_level)) |>
+  arrange(desc(n_people))
+```
+
+## An interactive map
+
+`geohazards` does not depend on a mapping package: the sectors are a plain `sf`
+object, so any of them will do. With **mapview**, colouring by risk level over
+satellite imagery takes a few lines.
+
+```{r map-simple}
+library(mapview)
+
+mapview(
+  angra,
+  zcol = "risk_level",
+  col.regions = c("Alto" = "#F59E0B", "Muito alto" = "#DC2626"),
+  map.types = c("Esri.WorldImagery", "OpenStreetMap", "CartoDB.Positron"),
+  layer.name = "Risk sectors"
+)
+```
+
+### A readable popup
+
+The raw layer carries a few dozen fields, many of them administrative metadata,
+and the occurrence layers carry an `email` field taken from the original
+report — personal data that has no place in a popup. Selecting the fields that
+matter and labelling them makes the map far easier to read:
+
+```{r map-popup}
+library(leafpop)
+
+fields <- c("locality", "process_type", "process_subtype", "risk_level",
+            "survey_date", "n_people")
+labels <- c("Locality", "Process", "Specific type", "Risk level",
+            "Surveyed", "People")
+
+popup_data <- angra |>
+  select(all_of(setNames(fields, labels)))
+
+mapview(
+  angra,
+  zcol = "risk_level",
+  col.regions = c("Alto" = "#F59E0B", "Muito alto" = "#DC2626"),
+  map.types = "Esri.WorldImagery",
+  layer.name = "Risk sectors",
+  popup = popupTable(popup_data, feature.id = FALSE, row.numbers = FALSE)
+)
+```
+
+To colour by a combination of fields — say risk level *and* process type —
+build the combined category first:
+
+```{r map-combined}
+angra <- angra |>
+  mutate(risk_process = paste(risk_level, process_type, sep = " | "))
+
+mapview(angra, zcol = "risk_process", map.types = "Esri.WorldImagery")
+```
+
+## Exporting
+
+Again, no wrapper needed: `sf::st_write()` handles every format.
+
+```{r export, eval = FALSE}
+# GeoPackage preserves long field names and accents
+sf::st_write(angra, "angra_risk.gpkg", delete_dsn = TRUE)
+
+# KML expects WGS84
+sf::st_write(sf::st_transform(angra, 4326), "angra_risk.kml", delete_dsn = TRUE)
+```
+
+Avoid shapefile if you can: it truncates field names to ten characters, which
+turns `n_affected_buildings` into something unreadable.
+
+## Combining with flood susceptibility
+
+The risk sectors say where people are exposed; `read_hand()` says how high the
+terrain sits above the nearest drainage, which is a proxy for flood
+susceptibility. The two combine directly:
+
+```{r hand}
+boundary <- geobr::read_municipality(code_muni = 3300100, year = 2022,
+                                     showProgress = FALSE)
+hand <- read_hand(boundary)
+
+# Mean HAND under each risk sector
+angra <- angra |>
+  mutate(hand_mean = terra::extract(
+    hand, terra::vect(sf::st_transform(angra, 4326)), fun = mean, na.rm = TRUE
+  )[, 2])
+```
+
+Sectors with a low mean HAND and a high risk level are the ones where flooding
+and mapped geological risk coincide:
+
+```{r hand-summary}
+angra |>
+  sf::st_drop_geometry() |>
+  summarise(sectors = n(), mean_hand = mean(hand_mean, na.rm = TRUE),
+            .by = c(risk_level, process_type)) |>
+  arrange(mean_hand)
+```
+
+## Technical reports
+
+The sectorisation of a municipality is usually documented in a technical
+report, deposited in RIGeo, the SGB's institutional repository. Given its
+handle, `read_sgb_report()` downloads and extracts the whole package:
+
+```{r rigeo}
+report <- read_sgb_report("doc/17701")
+
+report$item$title
+report$bitstreams[c("name", "bytes")]
+```
+
+The example handle is the report for Acrelândia (AC); any other RIGeo item
+works the same way.
+
+## Source
+
+Geological Survey of Brazil (SGB/CPRM) — GeoSGB and RIGeo. The data is public;
+please cite the source when using it. Municipality boundaries and codes come
+from the IBGE mesh.
