@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# geohazards <img src="man/figures/logo.png" align="right" height="139" alt="geohazards logo" />
+# geohazards <img src="man/figures/logo.png" alt="geohazards logo" align="right" height="139"/>
 
 <!-- badges: start -->
 
@@ -110,6 +110,18 @@ knitr::kable(sgb_inventory("Angra dos Reis", state = "RJ"))
 SIRGAS 2000 (EPSG:4674), with every risk level mapped by the SGB.
 
 ``` r
+library(dplyr)
+#> 
+#> Anexando pacote: 'dplyr'
+#> Os seguintes objetos são mascarados por 'package:stats':
+#> 
+#>     filter, lag
+#> Os seguintes objetos são mascarados por 'package:base':
+#> 
+#>     intersect, setdiff, setequal, union
+library(sf)
+#> Linking to GEOS 3.14.1, GDAL 3.12.1, PROJ 9.7.1; sf_use_s2() is TRUE
+
 angra <- read_sgb_risk("Angra dos Reis", state = "RJ")
 
 # Sectors and people at risk by risk level
@@ -117,9 +129,13 @@ table(angra$risk_level)
 #> 
 #>       Alto Muito alto 
 #>         44         31
-tapply(angra$n_people, angra$risk_level, sum, na.rm = TRUE)
-#>       Alto Muito alto 
-#>      31944      12904
+
+angra |>
+  st_drop_geometry() |>
+  summarise(n_people = sum(n_people, na.rm = TRUE), .by = risk_level)
+#>   risk_level n_people
+#> 1       Alto    31944
+#> 2 Muito alto    12904
 ```
 
 ``` r

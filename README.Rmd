@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# geohazards <img src="man/figures/logo.png" align="right" height="139" alt="geohazards logo" />
+# geohazards <img src="man/figures/logo.png" alt="geohazards logo" align="right" height="139"/>
 
 <!-- badges: start -->
 
@@ -36,16 +36,16 @@ layers) directly from R, without manual downloading.
 
 The package currently covers two data sources:
 
--   **GLO-30 HAND**, through `read_hand()`, which retrieves the [GLO-30
-    HAND](https://registry.opendata.aws/glo-30-hand/) ([Height Above the
-    Nearest
-    Drainage](https://www.sciencedirect.com/science/article/abs/pii/S0022169411002599))
-    raster at 30 m resolution for any polygon supplied by the user.
--   **SGB/CPRM**, through `read_sgb()` and friends, which retrieve the
-    geological risk cartography published by the [Geological Survey of
-    Brazil](https://geoportal.sgb.gov.br/) — risk sectorisation, flood
-    mapping and disaster occurrences — plus the technical reports
-    deposited in its repository (RIGeo).
+- **GLO-30 HAND**, through `read_hand()`, which retrieves the [GLO-30
+  HAND](https://registry.opendata.aws/glo-30-hand/) ([Height Above the
+  Nearest
+  Drainage](https://www.sciencedirect.com/science/article/abs/pii/S0022169411002599))
+  raster at 30 m resolution for any polygon supplied by the user.
+- **SGB/CPRM**, through `read_sgb()` and friends, which retrieve the
+  geological risk cartography published by the [Geological Survey of
+  Brazil](https://geoportal.sgb.gov.br/) — risk sectorisation, flood
+  mapping and disaster occurrences — plus the technical reports
+  deposited in its repository (RIGeo).
 
 It is actively being expanded with new data sources and functions, and
 is planned for submission to CRAN.
@@ -105,11 +105,17 @@ knitr::kable(sgb_inventory("Angra dos Reis", state = "RJ"))
 SIRGAS 2000 (EPSG:4674), with every risk level mapped by the SGB.
 
 ```{r sgb-risk, cache = TRUE}
+library(dplyr)
+library(sf)
+
 angra <- read_sgb_risk("Angra dos Reis", state = "RJ")
 
 # Sectors and people at risk by risk level
 table(angra$risk_level)
-tapply(angra$n_people, angra$risk_level, sum, na.rm = TRUE)
+
+angra |>
+  st_drop_geometry() |>
+  summarise(n_people = sum(n_people, na.rm = TRUE), .by = risk_level)
 ```
 
 ```{r sgb-map, cache = TRUE, dependson = "sgb-risk", fig.width = 8, fig.height = 5}
@@ -129,10 +135,13 @@ ggplot() +
   theme_minimal()
 ```
 
-Important: the SGB mapping is not universal. A municipality with no features comes
-back as an empty `sf` object with a warning. Absence of mapping is not
-absence of risk.
+Important: the SGB mapping is not universal. A municipality with no
+features comes back as an empty `sf` object with a warning. Absence of
+mapping is not absence of risk.
 
 If you use {geohazards} in your work, please cite it as:
 
-> Pedreira Junior, J.U. & Pedrassoli, J. (2026). geohazards: an R package for extracting global data related to climate risk, susceptibility, and vulnerability. GitHub repository: https://github.com/pedreirajr/geohazards
+> Pedreira Junior, J.U. & Pedrassoli, J. (2026). geohazards: an R
+> package for extracting global data related to climate risk,
+> susceptibility, and vulnerability. GitHub repository:
+> <https://github.com/pedreirajr/geohazards>
