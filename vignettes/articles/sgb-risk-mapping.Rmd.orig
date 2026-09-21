@@ -7,36 +7,47 @@ output: rmarkdown::html_document
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  eval = FALSE
+  message = FALSE,
+  warning = FALSE,
+  fig.path = "sgb-risk-mapping_files/figure-html/",
+  out.width = "100%"
 )
+# Embed the layers in the page instead of writing them as side files
+mapview::mapviewOptions(fgb = FALSE)
 ```
 
 The Geological Survey of Brazil (SGB/CPRM) maps, municipality by municipality,
-the sectors where people live under geological risk — landslides, debris flows,
-flash floods. `geohazards` reads that cartography directly into R.
+the sectors where people live under geological risk (landslides, debris flows,
+flash floods). `geohazards` reads that cartography directly into R.
 
-This article goes through a full workflow: finding out what exists, downloading
+This article goes through a full workflow, finding out what exists, downloading
 it, summarising the exposure, mapping it interactively and exporting it.
 
 ```{r setup}
 library(geohazards)
+library(dplyr)
 ```
 
 ## What exists before you download it
 
-The SGB mapping is not universal, and the server is slow enough that it pays to
-ask before downloading. `sgb_inventory()` counts features without transferring
+The SGB mapping is not universal, and the server can be slow enough that it pays to ask before downloading. `sgb_inventory()` counts features without transferring
 any geometry.
 
 ```{r inventory}
 # The catalogue of products and the identifier each one is requested by
 sgb_products()
 
-# What the SGB holds for one municipality
+# What the SGB holds for Angra dos Reis-RJ municipality
 sgb_inventory("Angra dos Reis", state = "RJ")
 
-# ... or for a whole state
-sgb_inventory(state = "RJ", by = "state")
+# ... or for a whole state, one row per product and municipality
+rj <- sgb_inventory(state = "RJ", by = "state")
+
+rj |>
+  count(product, name = "municipalities")
+
+rj |>
+  filter(product == "risk")
 ```
 
 If a municipality name is ambiguous, `state` disambiguates it. The IBGE code is
@@ -56,33 +67,43 @@ names(angra)
 sf::st_crs(angra)$epsg  # 4674, SIRGAS 2000
 ```
 
-Field names come back in English, while the values remain as the SGB publishes
-them — `risk_level` takes `"Alto"` and `"Muito alto"`. The mapping from the
-original SGB field names is documented in `?read_sgb`.
+<!--
+Ajustar isso posteriormente. Vamos alterar os valores das variáveis também?
+
+"Field names come back in English, while the values remain as the SGB publishes
+them. The mapping from the original SGB field names is documented in `?read_sgb`."
+-->
 
 ## Exposure in risk sectors
 
 `n_people`, `n_buildings` and `n_households` are the SGB's own per-sector
-estimates. Summarising them takes one line, so the package does not wrap it:
+estimates. Summarising them takes a short **dplyr** pipeline, so the package
+does not wrap it:
 
 ```{r exposure}
 exposure <- sf::st_drop_geometry(angra)
 
 # Total exposure
-colSums(exposure[c("n_people", "n_buildings", "n_households")], na.rm = TRUE)
+exposure |>
+  summarise(across(c(n_people, n_buildings, n_households),
+                   \(x) sum(x, na.rm = TRUE)))
 
 # Broken down by risk level
-aggregate(
-  cbind(n_people, n_buildings, n_households) ~ risk_level,
-  data = exposure, FUN = sum, na.rm = TRUE
-)
+exposure |>
+  summarise(
+    sectors = n(),
+    across(c(n_people, n_buildings, n_households), \(x) sum(x, na.rm = TRUE)),
+    .by = risk_level
+  )
 ```
 
 The same works per process type, which is often the more actionable cut:
 
 ```{r exposure-by-process}
-aggregate(n_people ~ process_type + risk_level, data = exposure,
-          FUN = sum, na.rm = TRUE)
+exposure |>
+  summarise(sectors = n(), n_people = sum(n_people, na.rm = TRUE),
+            .by = c(process_type, risk_level)) |>
+  arrange(desc(n_people))
 ```
 
 ## An interactive map
@@ -118,8 +139,8 @@ fields <- c("locality", "process_type", "process_subtype", "risk_level",
 labels <- c("Locality", "Process", "Specific type", "Risk level",
             "Surveyed", "People")
 
-popup_data <- angra[, fields]
-names(popup_data)[match(fields, names(popup_data))] <- labels
+popup_data <- angra |>
+  select(all_of(setNames(fields, labels)))
 
 mapview(
   angra,
@@ -135,7 +156,9 @@ To colour by a combination of fields — say risk level *and* process type —
 build the combined category first:
 
 ```{r map-combined}
-angra$risk_process <- paste(angra$risk_level, angra$process_type, sep = " | ")
+angra <- angra |>
+  mutate(risk_process = paste(risk_level, process_type, sep = " | "))
+
 mapview(angra, zcol = "risk_process", map.types = "Esri.WorldImagery")
 ```
 
@@ -143,7 +166,7 @@ mapview(angra, zcol = "risk_process", map.types = "Esri.WorldImagery")
 
 Again, no wrapper needed: `sf::st_write()` handles every format.
 
-```{r export}
+```{r export, eval = FALSE}
 # GeoPackage preserves long field names and accents
 sf::st_write(angra, "angra_risk.gpkg", delete_dsn = TRUE)
 
@@ -166,13 +189,22 @@ boundary <- geobr::read_municipality(code_muni = 3300100, year = 2022,
 hand <- read_hand(boundary)
 
 # Mean HAND under each risk sector
-angra$hand_mean <- terra::extract(
-  hand, terra::vect(sf::st_transform(angra, 4326)), fun = mean, na.rm = TRUE
-)[, 2]
+angra <- angra |>
+  mutate(hand_mean = terra::extract(
+    hand, terra::vect(sf::st_transform(angra, 4326)), fun = mean, na.rm = TRUE
+  )[, 2])
 ```
 
 Sectors with a low mean HAND and a high risk level are the ones where flooding
-and mapped geological risk coincide.
+and mapped geological risk coincide:
+
+```{r hand-summary}
+angra |>
+  sf::st_drop_geometry() |>
+  summarise(sectors = n(), mean_hand = mean(hand_mean, na.rm = TRUE),
+            .by = c(risk_level, process_type)) |>
+  arrange(mean_hand)
+```
 
 ## Technical reports
 
@@ -184,8 +216,11 @@ handle, `read_sgb_report()` downloads and extracts the whole package:
 report <- read_sgb_report("doc/17701")
 
 report$item$title
-report$files
+report$bitstreams[c("name", "bytes")]
 ```
+
+The example handle is the report for Acrelândia (AC); any other RIGeo item
+works the same way.
 
 ## Source
 

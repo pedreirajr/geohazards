@@ -3,16 +3,7 @@ title: "Flood susceptibility with GLO-30 HAND"
 output: rmarkdown::html_document
 ---
 
-```{r, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>",
-  message = FALSE,
-  warning = FALSE,
-  fig.path = "hand-flood-susceptibility_files/figure-html/",
-  out.width = "100%"
-)
-```
+
 
 HAND (Height Above the Nearest Drainage), introduced by Nobre et al. (2011),
 measures, for every cell of a terrain model, how high that cell sits above the
@@ -31,7 +22,8 @@ terrain is near the level the water reaches.
 `read_hand()` returns the GLO-30 HAND raster, derived from the Copernicus
 30 m DEM, clipped to any polygon you give it.
 
-```{r setup}
+
+``` r
 library(geohazards)
 library(terra)
 library(sf)
@@ -44,7 +36,8 @@ library(dplyr)
 polygon works (a watershed, a neighbourhood, a study area drawn by hand), but
 municipal boundaries are the most common case. In the Brazilian case, **geobr** provides the official IBGE ones:
 
-```{r read}
+
+``` r
 # Lauro de Freitas (BA): small, coastal, and covered by a single tile
 muni <- geobr::read_municipality(code_muni = 2919207, year = 2022,
                                  simplified = FALSE, showProgress = FALSE)
@@ -52,8 +45,20 @@ muni <- geobr::read_municipality(code_muni = 2919207, year = 2022,
 hand <- read_hand(muni)
 
 hand
+#> class       : SpatRaster
+#> size        : 366, 356, 1  (nrow, ncol, nlyr)
+#> resolution  : 0.0002777778, 0.0002777778  (x, y)
+#> extent      : -38.37403, -38.27514, -12.91097, -12.80931  (xmin, xmax, ymin, ymax)
+#> coord. ref. : lon/lat WGS 84 (EPSG:4326)
+#> source(s)   : memory
+#> varname     : hand
+#> name        :      hand
+#> min value   :         0
+#> max value   : 65.981606
 plot(hand)
 ```
+
+<img src="hand-flood-susceptibility_files/figure-html/read-1.png" alt="" width="100%" />
 
 Nothing is downloaded in full. The GLO-30 HAND tiles are Cloud Optimized
 GeoTIFFs, so only the blocks that intersect the polygon travel over the
@@ -71,11 +76,13 @@ for tile discovery, never the other way round.
 
 If you wish a projected CRS to get a raster in metres, use the `crs_output` argument:
 
-```{r crs}
+
+``` r
 # UTM zone 24S, metric units
 hand_utm <- read_hand(muni, crs_output = 31984)
 
 res(hand_utm)  # cell size in metres
+#> [1] 30.44014 30.44014
 ```
 
 Reprojection uses bilinear resampling, which is the right choice for a
@@ -86,7 +93,8 @@ continuous surface. With `crs_output` you can do it once, at reading time, rathe
 When `place` has more than one feature, the features are unioned and the
 raster is masked to the combined boundary:
 
-```{r multiple}
+
+``` r
 # Lauro de Freitas and its neighbour Simoes Filho
 neighbours <- geobr::read_municipality(code_muni = c(2919207, 2930709),
                                        year = 2022, showProgress = FALSE)
@@ -95,6 +103,8 @@ hand_pair <- read_hand(neighbours)
 plot(hand_pair)
 plot(st_geometry(neighbours), add = TRUE, border = "grey30")
 ```
+
+<img src="hand-flood-susceptibility_files/figure-html/multiple-1.png" alt="" width="100%" />
 
 ## Reading the values
 
@@ -105,7 +115,8 @@ To explore the values with **dplyr**, take them out of the raster as a data
 frame, one row per cell in a column named `hand` (`na.rm = TRUE` drops the
 cells outside the boundary):
 
-```{r values}
+
+``` r
 hand_values <- as.data.frame(hand, na.rm = TRUE)
 
 hand_values |>
@@ -116,28 +127,42 @@ hand_values |>
     median = median(hand),
     p95 = quantile(hand, 0.95)
   )
+#>   cells     mean p05   median      p95
+#> 1 63390 9.654945   0 6.339997 30.78297
 ```
 
-```{r distribution}
+
+``` r
 hist(hand_values$hand, breaks = 50,
      main = "HAND distribution", xlab = "Metres above nearest drainage")
 ```
 
+<img src="hand-flood-susceptibility_files/figure-html/distribution-1.png" alt="" width="100%" />
+
 A screening mask is a single comparison:
 
-```{r mask}
+
+``` r
 lowland <- hand < 5
 plot(lowland, main = "Terrain within 5 m of the nearest drainage")
+```
+
+<img src="hand-flood-susceptibility_files/figure-html/mask-1.png" alt="" width="100%" />
+
+``` r
 
 # Share of the municipality below the threshold
 hand_values |>
   summarise(share_below_5m = mean(hand < 5))
+#>   share_below_5m
+#> 1      0.4398959
 ```
 
 Classifying into bands is often more honest than a binary mask, because it
 keeps the gradient visible:
 
-```{r classify}
+
+``` r
 bands <- matrix(c(
    0,  2, 1,   # very low terrain, closest to the channel
    2,  5, 2,
@@ -149,15 +174,23 @@ hand_class <- classify(hand, bands)
 plot(hand_class, main = "HAND bands")
 ```
 
+<img src="hand-flood-susceptibility_files/figure-html/classify-1.png" alt="" width="100%" />
+
 The same bands, counted on the data frame, give the share of the area in each:
 
-```{r bands-share}
+
+``` r
 hand_values |>
   mutate(band = cut(hand, breaks = c(0, 2, 5, 15, Inf),
                     labels = c("0-2 m", "2-5 m", "5-15 m", "> 15 m"),
                     include.lowest = TRUE)) |>
   count(band) |>
   mutate(share = n / sum(n))
+#>     band     n     share
+#> 1  0-2 m 18659 0.2943524
+#> 2  2-5 m  9226 0.1455435
+#> 3 5-15 m 19747 0.3115160
+#> 4 > 15 m 15758 0.2485881
 ```
 
 ## Mapping
@@ -165,15 +198,19 @@ hand_values |>
 The raster is a plain `SpatRaster`, so every terra and ggplot2 workflow
 applies. A palette that goes from wet to dry reads better than the default:
 
-```{r map}
+
+``` r
 plot(hand, col = hcl.colors(50, "Blues", rev = TRUE),
      main = "Height above nearest drainage (m)")
 plot(st_geometry(muni), add = TRUE, border = "grey30")
 ```
 
+<img src="hand-flood-susceptibility_files/figure-html/map-1.png" alt="" width="100%" />
+
 With **ggplot2**, convert to a data frame with the cell coordinates first:
 
-```{r ggplot}
+
+``` r
 library(ggplot2)
 
 hand_df <- as.data.frame(hand, xy = TRUE)
@@ -185,9 +222,12 @@ ggplot(hand_df, aes(x, y, fill = hand)) +
   theme_minimal()
 ```
 
+<img src="hand-flood-susceptibility_files/figure-html/ggplot-1.png" alt="" width="100%" />
+
 ## Exporting
 
-```{r export, eval = FALSE}
+
+``` r
 writeRaster(hand, "hand.tif", overwrite = TRUE)
 
 # Smaller file, same values, for sharing

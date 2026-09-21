@@ -28,6 +28,20 @@ Field names returned by the SGB are translated to English, and the dates the
 server encodes as epoch milliseconds are returned as `Date`. The original SGB
 field names are documented in each function's `Value` section.
 
+## Bug fixes
+
+* `sgb_inventory(by = "state")` and `by = "country"` no longer drop the risk
+  sectorisation. The request asked the risk layers for a `municipio` field they
+  do not have (theirs is `munic`), the server failed, and only the flood
+  mapping came back. A layer with nothing mapped in the area is now skipped
+  silently instead of reported as "No response from the SGB".
+
+## Minor improvements
+
+* `read_hand()` names the layer of the returned raster `hand`, instead of the
+  temporary name terra assigns, so it reads cleanly in `print()` and in
+  `as.data.frame()`.
+
 # geohazards 0.1.0
 
 * Initial version.
