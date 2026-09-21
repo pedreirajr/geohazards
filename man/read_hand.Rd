@@ -17,7 +17,8 @@ requested, the raster is reprojected using bilinear resampling and an
 informative message is emitted.}
 }
 \value{
-A \code{SpatRaster} (terra) with HAND values in metres, clipped to
+A single-layer \code{SpatRaster} (terra) named \code{hand}, with HAND
+values in metres, clipped to
 the boundary of \code{place}. The CRS is WGS84 unless \code{crs_output} is set.
 }
 \description{

@@ -61,7 +61,8 @@
 #'   requested, the raster is reprojected using bilinear resampling and an
 #'   informative message is emitted.
 #'
-#' @return A `SpatRaster` (terra) with HAND values in metres, clipped to
+#' @return A single-layer `SpatRaster` (terra) named `hand`, with HAND
+#'   values in metres, clipped to
 #'   the boundary of `place`. The CRS is WGS84 unless `crs_output` is set.
 #'
 #' @examples
@@ -123,5 +124,7 @@ read_hand <- function(place, crs_output = NULL) {
     r <- terra::project(r, crs_out$wkt)
   }
 
+  names(r) <- "hand"
+  terra::varnames(r) <- "hand"
   r
 }
