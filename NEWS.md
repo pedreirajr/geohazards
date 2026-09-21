@@ -14,8 +14,6 @@ package:
 * `read_sgb()` downloads a risk product (risk sectorisation, flood mapping,
   disaster occurrences) for a municipality, a state or the whole country, as an
   `sf` object in SIRGAS 2000 (EPSG:4674).
-* `read_sgb_risk()` is a shortcut for the risk sectorisation, with an optional
-  filter by risk level.
 * `sgb_products()` lists the catalogue of SGB products, including the four
   layers that exist in the SGB holdings but that the public server does not
   answer queries for.

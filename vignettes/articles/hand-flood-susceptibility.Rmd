@@ -1,0 +1,224 @@
+---
+title: "Flood susceptibility with GLO-30 HAND"
+output: rmarkdown::html_document
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+HAND (Height Above the Nearest Drainage), introduced by Nobre et al. (2011),
+measures, for every cell of a terrain model, how high that cell sits above the
+drainage channel it flows into. It is a relative elevation, not an absolute
+one: a cell 2 m above its channel is close to the water level whether it
+stands at 10 m or at 1000 m of altitude. That makes it one of the cheapest
+proxies for flood susceptibility available globally — low HAND means the
+terrain is near the level the water reaches.
+
+> Nobre, A. D., Cuartas, L. A., Hodnett, M., Rennó, C. D., Rodrigues, G.,
+> Silveira, A., Waterloo, M., & Saleska, S. (2011). Height Above the Nearest
+> Drainage – a hydrologically relevant new terrain model. *Journal of
+> Hydrology*, 404(1–2), 13–29.
+> <https://doi.org/10.1016/j.jhydrol.2011.03.051>
+
+`read_hand()` returns the GLO-30 HAND raster, derived from the Copernicus
+30 m DEM, clipped to any polygon you give it.
+
+```{r setup}
+library(geohazards)
+library(terra)
+library(sf)
+```
+
+## Reading a raster for an area
+
+`read_hand()` takes an `sf` object with POLYGON or MULTIPOLYGON geometry. Any
+polygon works — a watershed, a neighbourhood, a study area drawn by hand — but
+municipal boundaries are the most common case, and **geobr** provides the
+official IBGE ones:
+
+```{r read}
+# Lauro de Freitas (BA): small, coastal, and covered by a single tile
+muni <- geobr::read_municipality(code_muni = 2919207, year = 2022,
+                                 simplified = FALSE, showProgress = FALSE)
+
+hand <- read_hand(muni)
+
+hand
+plot(hand)
+```
+
+Nothing is downloaded in full. The GLO-30 HAND tiles are Cloud Optimized
+GeoTIFFs, so only the blocks that intersect the polygon travel over the
+network. `read_hand()` reports how many 1×1 degree tiles the area spans, which
+is a good sanity check: a request covering many tiles is a large request, even
+with COG.
+
+Values are in **metres above the nearest drainage**, and the raster is masked
+to the boundary, so cells outside the polygon are `NA`.
+
+### Coordinate systems
+
+The dataset is published in WGS84 (EPSG:4326), and that is what comes back by
+default, whatever the CRS of `place` — the polygon is reprojected internally
+for tile discovery, never the other way round.
+
+Degrees are awkward for anything involving area or distance. Pass an
+appropriate projected CRS to get a raster in metres:
+
+```{r crs}
+# UTM zone 24S, metric units
+hand_utm <- read_hand(muni, crs_output = 31984)
+
+res(hand_utm)  # cell size in metres
+```
+
+Reprojection uses bilinear resampling, which is the right choice for a
+continuous surface. Do it once, at reading time, rather than reprojecting
+derived products later.
+
+### Several polygons at once
+
+When `place` has more than one feature, the features are unioned and the
+raster is masked to the combined boundary — one raster, not a list:
+
+```{r multiple}
+# Lauro de Freitas and its neighbour Simoes Filho
+neighbours <- geobr::read_municipality(code_muni = c(2919207, 2930709),
+                                       year = 2022, showProgress = FALSE)
+hand_pair <- read_hand(neighbours)
+```
+
+## Reading the values
+
+The interpretation is ordinal: lower means more susceptible. There is no
+universal cut-off that turns HAND into a flood map, and the sensible threshold
+depends on the basin, the channel network used to derive the product and the
+return period you have in mind. Values in the single digits of metres are the
+usual starting point, and the result should be treated as a screening layer,
+not as a flood hazard map.
+
+```{r distribution}
+# Where the values sit for this area
+global(hand, fun = "mean", na.rm = TRUE)
+quantile(values(hand, na.rm = TRUE), c(0.05, 0.25, 0.5, 0.75, 0.95))
+
+hist(values(hand, na.rm = TRUE), breaks = 50,
+     main = "HAND distribution", xlab = "Metres above nearest drainage")
+```
+
+A screening mask is a single comparison:
+
+```{r mask}
+lowland <- hand < 5
+plot(lowland, main = "Terrain within 5 m of the nearest drainage")
+
+# Share of the municipality below the threshold
+global(lowland, fun = "mean", na.rm = TRUE)
+```
+
+Classifying into bands is often more honest than a binary mask, because it
+keeps the gradient visible:
+
+```{r classify}
+bands <- matrix(c(
+   0,  2, 1,   # very low terrain, closest to the channel
+   2,  5, 2,
+   5, 15, 3,
+  15, Inf, 4   # well above the drainage
+), ncol = 3, byrow = TRUE)
+
+hand_class <- classify(hand, bands)
+plot(hand_class, main = "HAND bands")
+```
+
+## Extracting values for other features
+
+The most useful thing about a HAND raster is rarely the raster itself: it is
+the value under the features you already care about — buildings, schools,
+census tracts, risk sectors.
+
+```{r extract}
+sectors <- read_sgb("risk", municipality = "Angra dos Reis", state = "RJ")
+hand_angra <- read_hand(sectors)
+
+sectors$hand_mean <- extract(
+  hand_angra, vect(st_transform(sectors, 4326)), fun = mean, na.rm = TRUE
+)[, 2]
+
+sectors$hand_min <- extract(
+  hand_angra, vect(st_transform(sectors, 4326)), fun = min, na.rm = TRUE
+)[, 2]
+```
+
+Sectors that the SGB mapped as high geological risk *and* that sit a couple of
+metres above the nearest drainage are where two independent lines of evidence
+agree. See the article on the SGB cartography for what those sectors contain.
+
+For point data, the same call returns one row per point:
+
+```{r extract-points}
+points <- st_as_sf(data.frame(lon = c(-44.32, -44.30), lat = c(-22.97, -22.99)),
+                   coords = c("lon", "lat"), crs = 4326)
+extract(hand_angra, vect(points))
+```
+
+## Mapping
+
+The raster is a plain `SpatRaster`, so every terra and ggplot2 workflow
+applies. A palette that goes from wet to dry reads better than the default:
+
+```{r map}
+plot(hand, col = hcl.colors(50, "Blues", rev = TRUE),
+     main = "Height above nearest drainage (m)")
+plot(st_geometry(muni), add = TRUE, border = "grey30")
+```
+
+With **ggplot2**, convert to a data frame first:
+
+```{r ggplot}
+library(ggplot2)
+
+hand_df <- as.data.frame(hand, xy = TRUE)
+names(hand_df)[3] <- "hand"
+
+ggplot(hand_df, aes(x, y, fill = hand)) +
+  geom_raster() +
+  scale_fill_viridis_c(name = "HAND (m)", direction = -1) +
+  coord_sf(crs = 4326) +
+  theme_minimal()
+```
+
+## Exporting
+
+```{r export}
+writeRaster(hand, "hand.tif", overwrite = TRUE)
+
+# Smaller file, same values, for sharing
+writeRaster(hand, "hand_compressed.tif", overwrite = TRUE,
+            gdal = c("COMPRESS=DEFLATE", "PREDICTOR=3"))
+```
+
+## Caveats
+
+- **HAND is not a flood map.** It describes terrain, not water. It knows
+  nothing about rainfall, river discharge, drainage infrastructure, tides or
+  dams, and a cell can be low above its channel and still rarely flood.
+- **The drainage network is modelled**, derived from the DEM, so HAND inherits
+  every error of the underlying elevation model. Dense urban areas and flat
+  floodplains are where it struggles most.
+- **30 m cells** do not resolve individual buildings or street-level drainage.
+- **Coastal flooding** driven by the sea, rather than by a channel, is outside
+  what HAND represents.
+
+## Source
+
+GLO-30 HAND, published on the
+[AWS Open Data registry](https://registry.opendata.aws/glo-30-hand/) and
+derived from the Copernicus GLO-30 DEM. The HAND terrain descriptor itself is
+due to Nobre et al. (2011), cited at the top of this article.
+Municipality boundaries come from the IBGE mesh, through **geobr**.

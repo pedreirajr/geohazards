@@ -45,3 +45,6 @@ Suggests:
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
 Config/roxygen2/version: 8.0.0
+URL: https://pedreirajr.github.io/geohazards/,
+    https://github.com/pedreirajr/geohazards
+BugReports: https://github.com/pedreirajr/geohazards/issues
