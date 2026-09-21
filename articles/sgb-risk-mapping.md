@@ -185,10 +185,8 @@ mapview(
 ### A readable popup
 
 The raw layer carries a few dozen fields, many of them administrative
-metadata, and the occurrence layers carry an `email` field taken from
-the original report — personal data that has no place in a popup.
-Selecting the fields that matter and labelling them makes the map far
-easier to read:
+metadata. Selecting the fields that matter and labelling them makes the
+map far easier to read:
 
 ``` r
 

@@ -59,6 +59,11 @@
 </ul><p>Field names returned by the SGB are translated to English, and the dates the server encodes as epoch milliseconds are returned as <code>Date</code>. The original SGB field names are documented in each function’s <code>Value</code> section.</p>
 </div>
 <div class="section level3">
+<h3 id="personal-data-0-2-0">Personal data<a class="anchor" aria-label="anchor" href="#personal-data-0-2-0"></a></h3>
+<ul><li>
+<code><a href="../reference/read_sgb.html">read_sgb()</a></code> no longer returns fields that identify people. The occurrence layers carry the e-mail of whoever reported the event (<code>email</code>) and the account name of whoever created or edited the record (<code>created_user</code>, <code>last_edited_user</code>); these are now dropped as each page is downloaded.</li>
+</ul></div>
+<div class="section level3">
 <h3 id="bug-fixes-0-2-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-2-0"></a></h3>
 <ul><li>
 <code>sgb_inventory(by = "state")</code> and <code>by = "country"</code> no longer drop the risk sectorisation. The request asked the risk layers for a <code>municipio</code> field they do not have (theirs is <code>munic</code>), the server failed, and only the flood mapping came back. A layer with nothing mapped in the area is now skipped silently instead of reported as “No response from the SGB”.</li>

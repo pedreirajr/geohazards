@@ -64,8 +64,8 @@ boundary, which requires the geobr package.
 
 The SGB publishes its attributes in Portuguese. This package exposes
 them in English, and the table below is the full mapping. Fields absent
-from it are returned under their original names: no column is ever
-dropped.
+from it are returned under their original names. The only columns ever
+dropped are the personal ones described below.
 
 |  |  |  |
 |----|----|----|
@@ -95,9 +95,16 @@ dropped.
 Attribute *values* are left exactly as the SGB publishes them, in
 Portuguese: `risk_level`, for instance, takes `"Alto"` and
 `"Muito alto"`. `n_people`, `n_buildings` and `n_households` are the
-SGB's own per-sector estimates. The occurrence layers also carry an
-`email` field taken from the original report, which is personal data and
-should not be redistributed.
+SGB's own per-sector estimates.
+
+## Personal data
+
+The occurrence layers, fed by public reports, carry the e-mail of
+whoever reported the event (`email`) and the account name of whoever
+created or last edited the record (`created_user`, `last_edited_user`).
+These fields identify people, so `read_sgb()` removes them as each page
+is downloaded and never returns them. The free-text `notes` field is
+kept as published.
 
 ## See also
 
