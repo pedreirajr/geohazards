@@ -30,8 +30,7 @@ library(dplyr)
 
 ## What exists before you download it
 
-The SGB mapping is not universal, and the server can be slow enough that it pays to ask before downloading. `sgb_inventory()` counts features without transferring
-any geometry.
+The SGB mapping is not universal, and the server can be slow enough that it pays to ask before downloading. `sgb_inventory()` counts features without transferring any geometry.
 
 ```{r inventory}
 # The catalogue of products and the identifier each one is requested by
@@ -67,12 +66,8 @@ names(angra)
 sf::st_crs(angra)$epsg  # 4674, SIRGAS 2000
 ```
 
-<!--
-Ajustar isso posteriormente. Vamos alterar os valores das variáveis também?
-
-"Field names come back in English, while the values remain as the SGB publishes
-them. The mapping from the original SGB field names is documented in `?read_sgb`."
--->
+Important: Field names come back in English, while the values remain as the SGB publishes
+them. The mapping from the original SGB field names is documented in `?read_sgb`.
 
 ## Exposure in risk sectors
 
@@ -163,7 +158,7 @@ mapview(angra, zcol = "risk_process", map.types = "Esri.WorldImagery")
 
 ## Exporting
 
-Again, no wrapper needed: `sf::st_write()` handles every format.
+We can simply use `sf::st_write()` that handles every format.
 
 ```{r export, eval = FALSE}
 # GeoPackage preserves long field names and accents
@@ -175,35 +170,6 @@ sf::st_write(sf::st_transform(angra, 4326), "angra_risk.kml", delete_dsn = TRUE)
 
 Avoid shapefile if you can: it truncates field names to ten characters, which
 turns `n_affected_buildings` into something unreadable.
-
-## Combining with flood susceptibility
-
-The risk sectors say where people are exposed; `read_hand()` says how high the
-terrain sits above the nearest drainage, which is a proxy for flood
-susceptibility. The two combine directly:
-
-```{r hand}
-boundary <- geobr::read_municipality(code_muni = 3300100, year = 2022,
-                                     showProgress = FALSE)
-hand <- read_hand(boundary)
-
-# Mean HAND under each risk sector
-angra <- angra |>
-  mutate(hand_mean = terra::extract(
-    hand, terra::vect(sf::st_transform(angra, 4326)), fun = mean, na.rm = TRUE
-  )[, 2])
-```
-
-Sectors with a low mean HAND and a high risk level are the ones where flooding
-and mapped geological risk coincide:
-
-```{r hand-summary}
-angra |>
-  sf::st_drop_geometry() |>
-  summarise(sectors = n(), mean_hand = mean(hand_mean, na.rm = TRUE),
-            .by = c(risk_level, process_type)) |>
-  arrange(mean_hand)
-```
 
 ## Technical reports
 
