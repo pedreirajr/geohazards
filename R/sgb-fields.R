@@ -6,7 +6,8 @@
 # so that users can still follow the official SGB documentation.
 
 # Source field -> exported field. Fields absent from this dictionary are
-# returned unchanged: no column is ever silently dropped.
+# returned unchanged; the only columns ever dropped are the personal ones listed
+# in .sgb_personal_fields().
 .sgb_field_dict <- function() {
   c(
     # shared across layers
@@ -36,6 +37,25 @@
     observacoes = "notes",
     analisado = "reviewed"
   )
+}
+
+# Fields that identify a person, and are therefore never returned. The
+# occurrence layers carry the e-mail of whoever reported the event (`email`)
+# and the ArcGIS account, in "name.surname" form, of whoever created or last
+# edited the record (`created_user`, `last_edited_user`).
+.sgb_personal_fields <- function() {
+  c("email", "created_user", "last_edited_user")
+}
+
+# Drops the personal fields. Applied to every page .sgb_fetch() reads, so that
+# no personal data leaves the download step, whichever function called it.
+#
+# @param x An `sf` object.
+# @return `x` without the columns listed in .sgb_personal_fields().
+.sgb_drop_personal <- function(x) {
+  personal <- intersect(names(x), .sgb_personal_fields())
+  if (!length(personal)) return(x)
+  x[, setdiff(names(x), personal)]
 }
 
 # Renames the known source fields to their exported names.

@@ -108,6 +108,43 @@ test_that(".sgb_rename translates the known fields and keeps the rest", {
   expect_true("sug_interv" %in% names(renamed))
 })
 
+# --- Personal data ------------------------------------------------------------
+
+test_that(".sgb_drop_personal removes the fields that identify people", {
+  occurrences <- .sgb_fixture_occurrence()
+  cleaned <- geohazards:::.sgb_drop_personal(occurrences)
+
+  expect_false(any(geohazards:::.sgb_personal_fields() %in% names(cleaned)))
+  expect_true(all(c("evento", "observacoes") %in% names(cleaned)))
+  expect_s3_class(cleaned, "sf")
+  expect_equal(nrow(cleaned), nrow(occurrences))
+})
+
+test_that(".sgb_drop_personal leaves layers without personal fields alone", {
+  risk <- .sgb_fixture_risk()
+  expect_identical(geohazards:::.sgb_drop_personal(risk), risk)
+})
+
+test_that(".sgb_fetch never returns personal fields (offline, HTTP mocked)", {
+  body <- .sgb_fixture_geojson(.sgb_fixture_occurrence())
+  mock <- function(req) {
+    httr2::response(
+      status_code = 200L,
+      headers = list("Content-Type" = "application/geo+json"),
+      body = charToRaw(body)
+    )
+  }
+
+  result <- httr2::with_mocked_responses(
+    mock,
+    geohazards:::.sgb_fetch("risco_mobile_google")
+  )
+
+  expect_equal(nrow(result), 2L)
+  expect_false(any(geohazards:::.sgb_personal_fields() %in% names(result)))
+  expect_true("observacoes" %in% names(result))
+})
+
 test_that(".sgb_parse_dates converts ArcGIS epoch milliseconds to Date", {
   parsed <- geohazards:::.sgb_parse_dates(
     geohazards:::.sgb_rename(.sgb_fixture_risk())

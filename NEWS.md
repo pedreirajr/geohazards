@@ -28,6 +28,13 @@ Field names returned by the SGB are translated to English, and the dates the
 server encodes as epoch milliseconds are returned as `Date`. The original SGB
 field names are documented in each function's `Value` section.
 
+## Personal data
+
+* `read_sgb()` no longer returns fields that identify people. The occurrence
+  layers carry the e-mail of whoever reported the event (`email`) and the
+  account name of whoever created or edited the record (`created_user`,
+  `last_edited_user`); these are now dropped as each page is downloaded.
+
 ## Bug fixes
 
 * `sgb_inventory(by = "state")` and `by = "country"` no longer drop the risk
