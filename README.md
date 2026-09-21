@@ -111,16 +111,7 @@ SIRGAS 2000 (EPSG:4674), with every risk level mapped by the SGB.
 
 ``` r
 library(dplyr)
-#> 
-#> Anexando pacote: 'dplyr'
-#> Os seguintes objetos são mascarados por 'package:stats':
-#> 
-#>     filter, lag
-#> Os seguintes objetos são mascarados por 'package:base':
-#> 
-#>     intersect, setdiff, setequal, union
 library(sf)
-#> Linking to GEOS 3.14.1, GDAL 3.12.1, PROJ 9.7.1; sf_use_s2() is TRUE
 
 angra <- read_sgb_risk("Angra dos Reis", state = "RJ")
 
@@ -144,7 +135,6 @@ library(ggplot2)
 # Municipality boundary for context
 angra_muni <- geobr::read_municipality(code_muni = angra$code_muni[1],
                                        year = 2022, showProgress = FALSE)
-#> ℹ Using year/date 2022
 
 ggplot() +
   geom_sf(data = angra_muni, fill = "grey95", colour = "grey60") +

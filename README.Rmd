@@ -91,7 +91,7 @@ mapped for a municipality and then downloads its risk sectorisation.
 Before downloading anything, `sgb_inventory()` reports which products
 exist and how many features each one has.
 
-```{r sgb-catalog, cache = TRUE}
+```{r sgb-catalog, cache = TRUE, message = FALSE, warning = FALSE}
 library(geohazards)
 
 # The catalogue of products
@@ -104,7 +104,7 @@ knitr::kable(sgb_inventory("Angra dos Reis", state = "RJ"))
 `read_sgb_risk()` returns the risk sectorisation as an `sf` object in
 SIRGAS 2000 (EPSG:4674), with every risk level mapped by the SGB.
 
-```{r sgb-risk, cache = TRUE}
+```{r sgb-risk, cache = TRUE, message = FALSE, warning = FALSE}
 library(dplyr)
 library(sf)
 
@@ -118,7 +118,7 @@ angra |>
   summarise(n_people = sum(n_people, na.rm = TRUE), .by = risk_level)
 ```
 
-```{r sgb-map, cache = TRUE, dependson = "sgb-risk", fig.width = 8, fig.height = 5}
+```{r sgb-map, cache = TRUE, dependson = "sgb-risk", fig.width = 8, fig.height = 5, message = FALSE, warning = FALSE}
 library(ggplot2)
 
 # Municipality boundary for context
