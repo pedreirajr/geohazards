@@ -171,30 +171,19 @@ exposure |>
 ## An interactive map
 
 `geohazards` does not depend on a mapping package: the sectors are a
-plain `sf` object, so any of them will do. With **mapview**, colouring
-by risk level over satellite imagery takes a few lines.
+plain `sf` object, so any of them will do. The examples below use
+**mapview**.
+
+### A readable popup
+
+By default, clicking a feature shows every field of the layer, a few
+dozen of them, many of them administrative metadata. Selecting the
+fields that matter and labelling them makes the map far easier to read,
+so build the popup first:
 
 ``` r
 
 library(mapview)
-
-mapview(
-  angra,
-  zcol = "risk_level",
-  col.regions = c("Alto" = "#F59E0B", "Muito alto" = "#DC2626"),
-  map.types = c("Esri.WorldImagery", "OpenStreetMap", "CartoDB.Positron"),
-  layer.name = "Risk sectors"
-)
-```
-
-### A readable popup
-
-The raw layer carries a few dozen fields, many of them administrative
-metadata. Selecting the fields that matter and labelling them makes the
-map far easier to read:
-
-``` r
-
 library(leafpop)
 
 fields <- c("locality", "process_type", "process_subtype", "risk_level",
@@ -202,28 +191,46 @@ fields <- c("locality", "process_type", "process_subtype", "risk_level",
 labels <- c("Locality", "Process", "Specific type", "Risk level",
             "Surveyed", "People")
 
-popup_data <- angra |>
-  select(all_of(setNames(fields, labels)))
+popup <- angra |>
+  select(all_of(setNames(fields, labels))) |>
+  popupTable(feature.id = FALSE, row.numbers = FALSE)
+```
+
+### Colouring by risk level
+
+Colouring the sectors by risk level over satellite imagery then takes a
+single call:
+
+``` r
 
 mapview(
   angra,
   zcol = "risk_level",
   col.regions = c("Alto" = "#F59E0B", "Muito alto" = "#DC2626"),
-  map.types = "Esri.WorldImagery",
+  map.types = c("Esri.WorldImagery", "OpenStreetMap", "CartoDB.Positron"),
   layer.name = "Risk sectors",
-  popup = popupTable(popup_data, feature.id = FALSE, row.numbers = FALSE)
+  popup = popup
 )
 ```
 
-To colour by a combination of fields — say risk level *and* process type
-— build the combined category first:
+### Colouring by a combination of fields
+
+To colour by risk level *and* process type, build the combined category
+first. The popup still applies, because the rows of `angra` stay in the
+same order:
 
 ``` r
 
 angra <- angra |>
   mutate(risk_process = paste(risk_level, process_type, sep = " | "))
 
-mapview(angra, zcol = "risk_process", map.types = "Esri.WorldImagery")
+mapview(
+  angra,
+  zcol = "risk_process",
+  map.types = "Esri.WorldImagery",
+  layer.name = "Risk level | process",
+  popup = popup
+)
 ```
 
 ## Exporting
