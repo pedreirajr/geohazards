@@ -32,7 +32,7 @@ Imports:
     terra,
     utils
 Encoding: UTF-8
-LazyData: true
+NeedsCompilation: no
 Suggests:
     curl,
     geobr,
