@@ -36,16 +36,16 @@ layers) directly from R, without manual downloading.
 
 The package currently covers two data sources:
 
-- **GLO-30 HAND**, through `read_hand()`, which retrieves the [GLO-30
-  HAND](https://registry.opendata.aws/glo-30-hand/) ([Height Above the
-  Nearest
-  Drainage](https://www.sciencedirect.com/science/article/abs/pii/S0022169411002599))
-  raster at 30 m resolution for any polygon supplied by the user.
-- **SGB/CPRM**, through `read_sgb()` and friends, which retrieve the
-  geological risk cartography published by the [Geological Survey of
-  Brazil](https://geoportal.sgb.gov.br/) — risk sectorisation, flood
-  mapping and disaster occurrences — plus the technical reports
-  deposited in its repository (RIGeo).
+- **GLO-30 HAND**: `read_hand()` retrieves the [Height Above the Nearest
+  Drainage](https://www.sciencedirect.com/science/article/abs/pii/S0022169411002599)
+  raster from the [GLO-30
+  HAND](https://registry.opendata.aws/glo-30-hand/) dataset, at 30 m
+  resolution, for any polygon supplied by the user.
+- **SGB/CPRM**: `read_sgb()` retrieves the geological risk cartography
+  published by the [Geological Survey of
+  Brazil](https://geoportal.sgb.gov.br/) (risk sectorisation, flood
+  mapping and disaster occurrences), while `read_sgb_report()` downloads
+  the technical reports deposited in its repository (RIGeo).
 
 It is actively being expanded with new data sources and functions, and
 is planned for submission to CRAN.
