@@ -71,9 +71,9 @@
 <p>The package currently covers two data sources:</p>
 <ul>
 <li>
-<strong>GLO-30 HAND</strong>, through <code><a href="reference/read_hand.html">read_hand()</a></code>, which retrieves the <a href="https://registry.opendata.aws/glo-30-hand/" class="external-link">GLO-30 HAND</a> (<a href="https://www.sciencedirect.com/science/article/abs/pii/S0022169411002599" class="external-link">Height Above the Nearest Drainage</a>) raster at 30 m resolution for any polygon supplied by the user.</li>
+<strong>GLO-30 HAND</strong>: <code><a href="reference/read_hand.html">read_hand()</a></code> retrieves the <a href="https://www.sciencedirect.com/science/article/abs/pii/S0022169411002599" class="external-link">Height Above the Nearest Drainage</a> raster from the <a href="https://registry.opendata.aws/glo-30-hand/" class="external-link">GLO-30 HAND</a> dataset, at 30 m resolution, for any polygon supplied by the user.</li>
 <li>
-<strong>SGB/CPRM</strong>, through <code><a href="reference/read_sgb.html">read_sgb()</a></code> and friends, which retrieve the geological risk cartography published by the <a href="https://geoportal.sgb.gov.br/" class="external-link">Geological Survey of Brazil</a> — risk sectorisation, flood mapping and disaster occurrences — plus the technical reports deposited in its repository (RIGeo).</li>
+<strong>SGB/CPRM</strong>: <code><a href="reference/read_sgb.html">read_sgb()</a></code> retrieves the geological risk cartography published by the <a href="https://geoportal.sgb.gov.br/" class="external-link">Geological Survey of Brazil</a> (risk sectorisation, flood mapping and disaster occurrences), while <code><a href="reference/read_sgb_report.html">read_sgb_report()</a></code> downloads the technical reports deposited in its repository (RIGeo).</li>
 </ul>
 <p>It is actively being expanded with new data sources and functions, and is planned for submission to CRAN.</p>
 <div class="section level2">

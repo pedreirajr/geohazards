@@ -8,19 +8,20 @@ layers) directly from R, without manual downloading.
 
 The package currently covers two data sources:
 
-- **GLO-30 HAND**, through
-  [`read_hand()`](https://pedreirajr.github.io/geohazards/reference/read_hand.md),
-  which retrieves the [GLO-30
-  HAND](https://registry.opendata.aws/glo-30-hand/) ([Height Above the
-  Nearest
-  Drainage](https://www.sciencedirect.com/science/article/abs/pii/S0022169411002599))
-  raster at 30 m resolution for any polygon supplied by the user.
-- **SGB/CPRM**, through
+- **GLO-30 HAND**:
+  [`read_hand()`](https://pedreirajr.github.io/geohazards/reference/read_hand.md)
+  retrieves the [Height Above the Nearest
+  Drainage](https://www.sciencedirect.com/science/article/abs/pii/S0022169411002599)
+  raster from the [GLO-30
+  HAND](https://registry.opendata.aws/glo-30-hand/) dataset, at 30 m
+  resolution, for any polygon supplied by the user.
+- **SGB/CPRM**:
   [`read_sgb()`](https://pedreirajr.github.io/geohazards/reference/read_sgb.md)
-  and friends, which retrieve the geological risk cartography published
-  by the [Geological Survey of Brazil](https://geoportal.sgb.gov.br/) —
-  risk sectorisation, flood mapping and disaster occurrences — plus the
-  technical reports deposited in its repository (RIGeo).
+  retrieves the geological risk cartography published by the [Geological
+  Survey of Brazil](https://geoportal.sgb.gov.br/) (risk sectorisation,
+  flood mapping and disaster occurrences), while
+  [`read_sgb_report()`](https://pedreirajr.github.io/geohazards/reference/read_sgb_report.md)
+  downloads the technical reports deposited in its repository (RIGeo).
 
 It is actively being expanded with new data sources and functions, and
 is planned for submission to CRAN.
